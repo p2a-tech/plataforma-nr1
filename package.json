@@ -1,0 +1,47 @@
+{
+  "name": "previa-monorepo",
+  "version": "0.2.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "@previa/contracts": "*",
+    "bcryptjs": "^2.4.3",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.454.0",
+    "next": "14.2.18",
+    "pdfkit": "^0.15.2",
+    "postgres": "^3.4.9",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.13.3",
+    "tailwind-merge": "^2.5.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@rollup/wasm-node": "^4.61.1",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20",
+    "@types/pdfkit": "^0.13.9",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5",
+    "vitest": "^3.2.6"
+  },
+  "overrides": {
+    "rollup": "npm:@rollup/wasm-node@^4.61.1"
+  }
+}

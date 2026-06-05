@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   Temas — tokens de cor como variáveis CSS (RGB sem vírgulas, p/ usar /alpha).
+   .dark é o padrão; .light sobrescreve. A classe fica em <html>.
+   ========================================================================== */
+.dark {
+  --bg: 11 31 58; /* #0B1F3A */
+  --panel: 18 41 77; /* #12294D */
+  --deep: 8 22 39; /* #081627 */
+  --ink: 220 233 245; /* #DCE9F5 */
+  --ink-muted: 110 126 150; /* cinza-azulado claro */
+  --line: 255 255 255; /* bordas/insets: branco em baixa opacidade */
+  --fill: 255 255 255;
+  --scroll: 28 58 99;
+  color-scheme: dark;
+}
+
+.light {
+  --bg: 237 242 249; /* #EDF2F9 */
+  --panel: 255 255 255; /* cards brancos */
+  --deep: 247 250 253; /* #F7FAFD superfícies (sidebar) */
+  --ink: 17 33 54; /* #112136 texto escuro */
+  --ink-muted: 90 105 125; /* #5A697D */
+  --line: 15 30 55; /* bordas/insets: navy escuro em baixa opacidade */
+  --fill: 15 30 55;
+  --scroll: 197 208 222;
+  color-scheme: light;
+}
+
+html,
+body {
+  background-color: rgb(var(--bg));
+  color: rgb(var(--ink));
+}
+
+/* Scrollbar discreta, adaptada ao tema */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--scroll)) transparent;
+}
+*::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgb(var(--scroll));
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--scroll) / 0.8);
+}
+
+@layer components {
+  /* Card padrão de painel */
+  .panel {
+    @apply rounded-2xl shadow-panel backdrop-blur-sm;
+    border: 1px solid rgb(var(--line) / 0.1);
+    background-color: rgb(var(--panel) / 0.8);
+  }
+
+  /* Gradiente de fundo com brilho sutil */
+  .bg-app {
+    background:
+      radial-gradient(1100px 520px at 12% -8%, rgba(0, 194, 209, 0.08), transparent 60%),
+      radial-gradient(900px 520px at 100% 0%, rgba(255, 107, 53, 0.06), transparent 55%),
+      rgb(var(--bg));
+  }
+
+  .tag {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium;
+  }
+
+  .stat-num {
+    @apply font-display text-3xl font-semibold tracking-tight text-ink md:text-4xl;
+  }
+}
+
+/* Motivo de "ondas de radar" — círculos concêntricos animados */
+.radar-rings {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  overflow: hidden;
+}
+.radar-rings span {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 194, 209, 0.35);
+  animation: radar 3s ease-out infinite;
+}
+.radar-rings span:nth-child(2) {
+  animation-delay: 1s;
+}
+.radar-rings span:nth-child(3) {
+  animation-delay: 2s;
+}
+
+/* Linha de fluxo tracejada animada (tela Human-in-the-Loop) */
+.flow-line {
+  stroke-dasharray: 6 6;
+  animation: flow 1s linear infinite;
+}

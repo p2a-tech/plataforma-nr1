@@ -1,0 +1,14 @@
+/node_modules
+/.next/
+/out/
+/build
+*.pem
+.DS_Store
+*.tsbuildinfo
+next-env.d.ts
+.env*
+# templates de env são commitáveis (e devem ser).
+!.env.example
+!.env.production.example
+
+.vercel

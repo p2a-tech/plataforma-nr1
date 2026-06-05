@@ -1,0 +1,33 @@
+# ============================================================================
+#  PrevIA · Caddy (reverse proxy + HTTPS automático via Let's Encrypt)
+# ----------------------------------------------------------------------------
+#  {$DOMAIN} vem do ambiente (docker-compose.prod.yml -> .env.production).
+#  Caddy emite e renova o certificado TLS automaticamente para o domínio,
+#  desde que o DNS A/AAAA aponte para a VPS e as portas 80/443 estejam livres.
+# ============================================================================
+
+{$DOMAIN} {
+	# App Next.js (standalone) na rede interna.
+	reverse_proxy app:3000
+
+	# Compressão.
+	encode zstd gzip
+
+	# Cabeçalhos de segurança (defaults sensatos).
+	header {
+		# HSTS: força HTTPS por 1 ano (inclui subdomínios).
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		# Anti-clickjacking / sniffing.
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Remove header que expõe o servidor.
+		-Server
+	}
+
+	# Logs em JSON (stdout -> docker logs).
+	log {
+		output stdout
+		format json
+	}
+}

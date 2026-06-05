@@ -1,0 +1,107 @@
+# ============================================================================
+#  PrevIA · stack de PRODUÇÃO (VPS self-hosted)
+# ----------------------------------------------------------------------------
+#  Subir:     docker compose -f docker-compose.prod.yml up -d --build
+#  Migrar:    docker compose -f docker-compose.prod.yml run --rm migrate
+#  Logs:      docker compose -f docker-compose.prod.yml logs -f app
+#  Derrubar:  docker compose -f docker-compose.prod.yml down   (mantém volumes)
+#
+#  Variáveis vêm de ./.env.production (veja .env.production.example).
+#  O banco NÃO expõe porta no host — só a rede interna `previa_internal`.
+#  Apenas o Caddy publica portas (80/443) e termina TLS.
+# ============================================================================
+
+services:
+  # --- Postgres ------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: previa-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-previa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD em .env.production}
+      POSTGRES_DB: ${POSTGRES_DB:-previa}
+    # Sem `ports:` — o banco fica só na rede interna (não exposto ao host).
+    volumes:
+      - previa_pgdata_prod:/var/lib/postgresql/data
+    networks:
+      - previa_internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-previa} -d ${POSTGRES_DB:-previa}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # --- Migrations (one-shot) ----------------------------------------------
+  # Roda o versionador (scripts/migrate.mjs) e sai. Aplique antes do app:
+  #   docker compose -f docker-compose.prod.yml run --rm migrate
+  migrate:
+    image: node:20-alpine
+    container_name: previa-migrate
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    working_dir: /app
+    # Monta o repo só para ler scripts/ + db/migrations/ e instalar `postgres`.
+    volumes:
+      - ./scripts:/app/scripts:ro
+      - ./db:/app/db:ro
+    command: >
+      sh -c "npm install --no-save postgres@3 && node scripts/migrate.mjs"
+    networks:
+      - previa_internal
+    restart: "no"
+
+  # --- App (Next.js standalone) -------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: previa-app:latest
+    container_name: previa-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    # Carrega TODAS as variáveis do app a partir do .env.production.
+    env_file:
+      - ./.env.production
+    # Sem `ports:` — acesso externo só via Caddy (rede interna).
+    expose:
+      - "3000"
+    networks:
+      - previa_internal
+
+  # --- Caddy (reverse proxy + TLS automático) ------------------------------
+  caddy:
+    image: caddy:2-alpine
+    container_name: previa-caddy
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    environment:
+      DOMAIN: ${DOMAIN:?defina DOMAIN em .env.production}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data      # certificados ACME (persistir!)
+      - caddy_config:/config
+    networks:
+      - previa_internal
+
+networks:
+  previa_internal:
+    driver: bridge
+
+volumes:
+  previa_pgdata_prod:
+    name: previa_pgdata_prod
+  caddy_data:
+    name: previa_caddy_data
+  caddy_config:
+    name: previa_caddy_config

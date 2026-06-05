@@ -1,0 +1,39 @@
+# ============================================================================
+#  Contexto de build do Docker — exclui o que não deve ir para a imagem.
+# ============================================================================
+
+# Dependências e artefatos de build (reinstalados/regerados no build).
+node_modules
+**/node_modules
+.next
+out
+build
+*.tsbuildinfo
+
+# Controle de versão / IDE.
+.git
+.gitignore
+.vscode
+.idea
+
+# Segredos e ambiente (NUNCA entram na imagem — vêm via env em runtime).
+.env
+.env.*
+!.env.production.example
+
+# Banco de dados local: init/seed e migrations rodam fora da imagem.
+db/
+
+# Docs e infra que não fazem parte do runtime do app.
+*.md
+Dockerfile
+.dockerignore
+docker-compose.yml
+docker-compose.prod.yml
+Caddyfile
+scripts/
+
+# Plataformas externas / SO.
+.vercel
+.DS_Store
+*.pem

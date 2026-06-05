@@ -1,0 +1,15 @@
+{
+  "name": "@previa/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Schemas Zod, taxonomias e helpers de assinatura que definem o contrato entre a clínica parceira e a plataforma PrevIA. ESTE PACOTE É A BARREIRA DE SIGILO COMO CÓDIGO — qualquer campo que não esteja aqui é rejeitado na fronteira.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./signing": "./src/signing.ts"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  }
+}

@@ -1,0 +1,53 @@
+# ============================================================================
+#  PrevIA · Postgres local (espelha o que roda na VPS de produção)
+# ----------------------------------------------------------------------------
+#  Subir:    docker compose up -d
+#  Logs:     docker compose logs -f db
+#  Derrubar: docker compose down            (mantém os dados no volume)
+#  Zerar:    docker compose down -v         (APAGA os dados)
+#
+#  O schema e o seed são aplicados automaticamente na primeira subida
+#  (scripts em ./db/init são executados em ordem pelo entrypoint do Postgres).
+#
+#  Produção (VPS): use estas mesmas imagens, mas troque as senhas via .env,
+#  NÃO exponha a porta 5432 publicamente (use rede interna / túnel) e
+#  configure backup do volume `previa_pgdata`.
+# ============================================================================
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: previa-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-previa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-previa_dev_pwd}
+      POSTGRES_DB: ${POSTGRES_DB:-previa}
+    ports:
+      # Em produção, REMOVA esta linha (mantenha o banco só na rede interna).
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - previa_pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-previa} -d ${POSTGRES_DB:-previa}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # UI web opcional para inspecionar o banco (http://localhost:8080).
+  # Em produção, não suba este serviço.
+  adminer:
+    image: adminer:4
+    container_name: previa-adminer
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${ADMINER_PORT:-8080}:8080"
+    profiles: ["tools"]
+
+volumes:
+  previa_pgdata:
+    name: previa_pgdata

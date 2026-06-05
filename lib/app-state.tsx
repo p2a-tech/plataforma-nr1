@@ -18,6 +18,7 @@ export const tourRotas = [
   "/fluxo",
   "/clinica",
   "/conformidade",
+  "/juridico",
   "/governanca",
 ] as const;
 

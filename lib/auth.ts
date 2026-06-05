@@ -101,6 +101,7 @@ const ROTAS_SST: readonly string[] = [
   "/riscos",
   "/pgr",
   "/conformidade",
+  "/juridico",
   "/governanca",
 ];
 

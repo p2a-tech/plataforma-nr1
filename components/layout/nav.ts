@@ -8,6 +8,7 @@ import {
   FileAudio,
   BadgeCheck,
   ShieldCheck,
+  Scale,
   type LucideIcon,
 } from "lucide-react";
 
@@ -29,5 +30,6 @@ export const navItems: NavItem[] = [
   { href: "/clinica", label: "Portal da Clínica", icon: HeartPulse, ator: "clinica", descricao: "Visão do parceiro" },
   { href: "/atendimento", label: "Atendimento + IA", icon: FileAudio, ator: "clinica", descricao: "Transcrição → análise da IA" },
   { href: "/conformidade", label: "Conformidade & eSocial", icon: BadgeCheck, ator: "ia", descricao: "NR-1 · eventos" },
+  { href: "/juridico", label: "Compliance Jurídico", icon: Scale, ator: "ia", descricao: "Base legal · DPIA · evidências" },
   { href: "/governanca", label: "Governança & LGPD", icon: ShieldCheck, ator: "ia", descricao: "Privacidade e ética" },
 ];

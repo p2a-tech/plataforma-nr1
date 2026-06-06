@@ -237,7 +237,7 @@ function PhoneFrame({ conversa }: { conversa: BalaoChat[] }) {
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-sm font-semibold">
-              GPS<span className="font-normal italic">Você</span> · Cuidado
+              GPS<span className="font-normal italic">vc</span> - PrevIA
             </div>
             <div className="flex items-center gap-1.5 text-[11px] text-white/85">
               <span className="h-1.5 w-1.5 rounded-full animate-pulseDot" style={{ backgroundColor: GPS.laranja }} />

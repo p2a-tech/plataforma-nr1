@@ -18,9 +18,10 @@
 /*  Marca                                                                      */
 /* -------------------------------------------------------------------------- */
 export const brand = {
-  name: "PrevIA",
+  name: "GPSPrevIA",
   tagline: "O Ecossistema Omni-SST",
   maker: "P2A Tech",
+  grupo: "Grupo GPS",
 };
 
 /* -------------------------------------------------------------------------- */

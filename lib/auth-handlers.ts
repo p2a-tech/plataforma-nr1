@@ -17,11 +17,31 @@ const Body = z.object({
   senha: z.string().min(1).max(200),
 });
 
-export async function loginHandler(req: NextRequest) {
-  if (!dbHabilitado) {
-    return NextResponse.json({ erro: "Banco indisponível" }, { status: 503 });
-  }
+/* -------------------------------------------------------------------------- */
+/*  Modo demonstração (sem banco)                                              */
+/*  Quando DATABASE_URL não está configurada, as telas usam dados mock         */
+/*  (lib/queries.ts cai em fallback). Aqui aceitamos as credenciais demo para  */
+/*  que o fluxo login → dashboard funcione sem Postgres.                       */
+/* -------------------------------------------------------------------------- */
+const DEMO_SENHA = "previa123";
+const DEMO_EMPRESA = "demo";
+const DEMO_USERS: Record<string, { papel: Papel; nome: string; clinica_id: string | null }> = {
+  "gestor@translog.com.br": { papel: "sst", nome: "Marina Alves", clinica_id: null },
+  "clinica@translog.com.br": { papel: "clinica", nome: "Clínica Parceira", clinica_id: "demo-clinica" },
+  "admin@p2a.tech": { papel: "admin", nome: "Admin P2A", clinica_id: null },
+};
 
+function setSessionCookie(token: string) {
+  cookies().set(COOKIE, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: MAX_AGE,
+  });
+}
+
+export async function loginHandler(req: NextRequest) {
   // Rate limit anti força-bruta: 8 tentativas / 5 min por IP.
   const ip = clientIp(req);
   const rl = rateLimit(rateLimitKey(["login", ip]), { limit: 8, windowMs: 5 * 60_000 });
@@ -43,6 +63,28 @@ export async function loginHandler(req: NextRequest) {
     return NextResponse.json({ erro: "Credenciais inválidas" }, { status: 422 });
   }
   const { email, senha } = parsed.data;
+
+  // Sem banco: autentica contra o conjunto demo e segue com dados mock.
+  if (!dbHabilitado) {
+    const demo = DEMO_USERS[email.toLowerCase()];
+    if (!demo || senha !== DEMO_SENHA) {
+      return NextResponse.json({ erro: "E-mail ou senha incorretos" }, { status: 401 });
+    }
+    const token = assinarSessao({
+      papel: demo.papel,
+      email,
+      nome: demo.nome,
+      clinica_id: demo.clinica_id,
+      empresa_id: DEMO_EMPRESA,
+    });
+    setSessionCookie(token);
+    return NextResponse.json({
+      ok: true,
+      papel: demo.papel,
+      nome: demo.nome,
+      redirect: homePorPapel(demo.papel),
+    });
+  }
 
   const [user] = await sql<
     {

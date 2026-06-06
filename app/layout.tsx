@@ -29,9 +29,9 @@ const exo2 = Exo_2({
 });
 
 export const metadata: Metadata = {
-  title: "PrevIA — O Ecossistema Omni-SST",
+  title: "GPSPrevIA — O Ecossistema Omni-SST",
   description:
-    "Plataforma de IA para conformidade com a NR-1 e gestão de riscos psicossociais. Modelo Human-in-the-Loop. Por P2A Tech.",
+    "Plataforma de IA para conformidade com a NR-1 e gestão de riscos psicossociais. Modelo Human-in-the-Loop. Grupo GPS · por P2A Tech.",
 };
 
 export default function RootLayout({

@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { brand } from "@/lib/mock-data";
 
-/** Logo textual PrevIA com marca de radar. Tamanhos: sm | md | lg */
+/** Logo textual GPSPrevIA com marca de radar. Tamanhos: sm | md | lg */
 export function Logo({
   size = "md",
   withTagline = false,
@@ -12,24 +12,26 @@ export function Logo({
   className?: string;
 }) {
   const dims = {
-    sm: { mark: "h-7 w-7", text: "text-lg", tag: "text-[10px]" },
-    md: { mark: "h-9 w-9", text: "text-2xl", tag: "text-[11px]" },
-    lg: { mark: "h-14 w-14", text: "text-4xl", tag: "text-sm" },
+    sm: { mark: "h-7 w-7", gps: "text-xl", prev: "text-base", tag: "text-[10px]" },
+    md: { mark: "h-9 w-9", gps: "text-[28px]", prev: "text-lg", tag: "text-[11px]" },
+    lg: { mark: "h-14 w-14", gps: "text-5xl", prev: "text-2xl", tag: "text-sm" },
   }[size];
 
   return (
-    <div className={cn("flex items-center gap-3", className)}>
-      <RadarMark className={dims.mark} />
-      <div className="leading-none">
-        <div className={cn("font-display font-semibold tracking-tight text-ink", dims.text)}>
+    <div className={cn("leading-none", className)}>
+      <div className="flex items-baseline tracking-tight text-ink">
+        {/* GPS — sigla em destaque: maior, branca, sans extra-bold */}
+        <span className={cn("font-brand font-extrabold text-ink", dims.gps)}>GPS</span>
+        {/* PrevIA — um pouco menor, no serif da marca */}
+        <span className={cn("font-display font-semibold", dims.prev)}>
           Prev<span className="text-ia">IA</span>
-        </div>
-        {withTagline && (
-          <div className={cn("mt-1 font-medium uppercase tracking-[0.18em] text-ink-muted", dims.tag)}>
-            {brand.tagline}
-          </div>
-        )}
+        </span>
       </div>
+      {withTagline && (
+        <div className={cn("mt-1 font-medium uppercase tracking-[0.18em] text-ink-muted", dims.tag)}>
+          {brand.tagline}
+        </div>
+      )}
     </div>
   );
 }

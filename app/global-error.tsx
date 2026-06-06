@@ -75,7 +75,7 @@ export default function GlobalError({
               margin: "0 0 24px",
             }}
           >
-            Tivemos um problema inesperado ao carregar o PrevIA. Nossa equipe foi
+            Tivemos um problema inesperado ao carregar o GPSPrevIA. Nossa equipe foi
             notificada. Você pode tentar novamente.
           </p>
 

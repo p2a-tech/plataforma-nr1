@@ -27,7 +27,7 @@ export const brand = {
 /* -------------------------------------------------------------------------- */
 /*  Perfis de acesso (seletor no header / login)                              */
 /* -------------------------------------------------------------------------- */
-export type ProfileId = "sst" | "clinica" | "admin";
+export type ProfileId = "sst" | "clinica" | "admin" | "diretoria";
 
 export interface Profile {
   id: ProfileId;
@@ -39,6 +39,7 @@ export interface Profile {
 export const profiles: Profile[] = [
   { id: "sst", nome: "Marina Alves", papel: "Gestora SST · Eng. de Segurança", iniciais: "MA" },
   { id: "clinica", nome: "Dr. Rafael Nunes", papel: "Clínica Parceira · Psicólogo", iniciais: "RN" },
+  { id: "diretoria", nome: "Diretoria GPS", papel: "Diretoria · Visão do grupo", iniciais: "DG" },
   { id: "admin", nome: "Admin P2A", papel: "Administrador da Plataforma", iniciais: "AP" },
 ];
 

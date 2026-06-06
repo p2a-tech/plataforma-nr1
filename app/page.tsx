@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 const DEMO_EMAIL: Record<ProfileId, string> = {
   sst: "gestor@translog.com.br",
   clinica: "clinica@translog.com.br",
+  diretoria: "diretoria@gps.com.br",
   admin: "admin@p2a.tech",
 };
 
@@ -172,7 +173,7 @@ export default function LoginPage() {
             {/* Seletor de perfil */}
             <div className="mt-4">
               <label className="mb-2 block text-xs font-medium text-ink-muted">Entrar como (demo)</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {profiles.map((p) => (
                   <button
                     key={p.id}

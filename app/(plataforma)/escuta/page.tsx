@@ -17,7 +17,7 @@ import { RespostasBarChart } from "@/components/charts";
 import { cn } from "@/lib/utils";
 import { conversaPulso, adesaoCanais, empresa, type BalaoChat } from "@/lib/mock-data";
 import { exigirSessao } from "@/lib/auth";
-import { withEmpresa } from "@/lib/tenant";
+import { withEscopo } from "@/lib/escopo";
 import {
   getRadarResumo,
   getRadarCanais,
@@ -29,7 +29,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function EscutaPage() {
-  const sessao = exigirSessao(["sst", "admin"]);
+  const sessao = exigirSessao(["sst", "admin", "diretoria"]);
   const [resumo, canaisQ, semana, porSetor, ofensores] = await withEmpresa(
     sessao.empresa_id,
     () =>

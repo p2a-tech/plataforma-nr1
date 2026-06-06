@@ -18,7 +18,7 @@ import { Database, FlaskConical } from "lucide-react";
 import { empresa, type Risco } from "@/lib/mock-data";
 import { getInventarioRiscos } from "@/lib/queries";
 import { exigirSessao } from "@/lib/auth";
-import { withEmpresa } from "@/lib/tenant";
+import { withEscopo } from "@/lib/escopo";
 
 export const dynamic = "force-dynamic";
 
@@ -56,9 +56,9 @@ const statusConfig: Record<
 };
 
 export default async function RiscosPage() {
-  const sessao = exigirSessao(["sst", "admin"]);
+  const sessao = exigirSessao(["sst", "admin", "diretoria"]);
   const eixo = [1, 2, 3, 4, 5];
-  const { fonte, riscos } = await withEmpresa(sessao.empresa_id, () => getInventarioRiscos());
+  const { fonte, riscos } = await withEscopo(sessao, () => getInventarioRiscos());
   const dadosReais = fonte === "real";
 
   const resumo = [

@@ -34,7 +34,7 @@ import {
 } from "@/lib/queries";
 import { getResumoJuridico } from "@/lib/juridico";
 import { exigirSessao } from "@/lib/auth";
-import { withEmpresa } from "@/lib/tenant";
+import { withEscopo } from "@/lib/escopo";
 
 export const dynamic = "force-dynamic";
 
@@ -227,8 +227,8 @@ function diasAteIso(iso: string): number {
 }
 
 export default async function JuridicoPage() {
-  const sessao = exigirSessao(["sst", "admin"]);
-  const [conf, pgr, resumo, riscos, jur] = await withEmpresa(sessao.empresa_id, () =>
+  const sessao = exigirSessao(["sst", "admin", "diretoria"]);
+  const [conf, pgr, resumo, riscos, jur] = await withEscopo(sessao, () =>
     Promise.all([getConformidade(), getPgrStatus(), getResumo(), getInventarioRiscos(), getResumoJuridico()]),
   );
 

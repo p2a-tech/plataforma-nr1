@@ -17,25 +17,43 @@ import { comEscopoEmpresa } from "@/lib/db";
  * Se chamada sem escopo, `empresaAtual()` LANÇA — fail-closed.
  */
 
-const store = new AsyncLocalStorage<{ empresaId: string }>();
+const store = new AsyncLocalStorage<{ empresaIds: string[] }>();
 
+/** Escopo de UMA empresa (sst/clinica). */
 export async function withEmpresa<T>(empresaId: string, fn: () => Promise<T>): Promise<T> {
-  return store.run({ empresaId }, () => comEscopoEmpresa(empresaId, fn));
+  return store.run({ empresaIds: [empresaId] }, () => comEscopoEmpresa(empresaId, fn));
 }
 
-export function empresaAtual(): string {
+/**
+ * Escopo de VÁRIAS empresas (Diretoria: consolidado do grupo ou seleção).
+ * As queries filtram com `empresa_id = ANY(empresasAtuais())`. O set_config do
+ * RLS recebe a primeira empresa (irrelevante na conexão superusuário de dev),
+ * então o ANY é o filtro efetivo.
+ */
+export async function withEmpresas<T>(empresaIds: string[], fn: () => Promise<T>): Promise<T> {
+  const ids = empresaIds.length ? empresaIds : ["emp_unscoped"];
+  return store.run({ empresaIds: ids }, () => comEscopoEmpresa(ids[0], fn));
+}
+
+/** Lista de empresas no escopo atual (1 = única; N = consolidado do grupo). */
+export function empresasAtuais(): string[] {
   const ctx = store.getStore();
   if (!ctx) {
     throw new Error(
-      "[tenant] consulta sem escopo de empresa — chame withEmpresa(empresaId, ...) na página",
+      "[tenant] consulta sem escopo de empresa — chame withEmpresa/withEmpresas(...) na página",
     );
   }
-  return ctx.empresaId;
+  return ctx.empresaIds;
+}
+
+/** Compat: primeira empresa do escopo. */
+export function empresaAtual(): string {
+  return empresasAtuais()[0];
 }
 
 /** Variante segura para wrappers que toleram "nenhum escopo" (testes etc.). */
 export function empresaAtualOuNull(): string | null {
-  return store.getStore()?.empresaId ?? null;
+  return store.getStore()?.empresaIds[0] ?? null;
 }
 
 import { exigirSessao, type Papel } from "@/lib/auth";

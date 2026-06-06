@@ -15,7 +15,7 @@ import { empresa } from "@/lib/mock-data";
 import { getPgrStatus, type PgrAssinatura } from "@/lib/queries";
 import { AssinarForm } from "./assinar-form";
 import { exigirSessao } from "@/lib/auth";
-import { withEmpresa } from "@/lib/tenant";
+import { withEscopo } from "@/lib/escopo";
 
 export const dynamic = "force-dynamic";
 
@@ -24,8 +24,8 @@ function dataFmt(iso: string) {
 }
 
 export default async function PgrPage() {
-  const sessao = exigirSessao(["sst", "admin"]);
-  const pgr = await withEmpresa(sessao.empresa_id, () => getPgrStatus());
+  const sessao = exigirSessao(["sst", "admin", "diretoria"]);
+  const pgr = await withEscopo(sessao, () => getPgrStatus());
   const { resumo, ultima, pendente, motivo } = pgr;
 
   return (

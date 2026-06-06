@@ -51,7 +51,7 @@ async function carregarConfig(): Promise<ItemGovernanca[]> {
 }
 
 export default async function GovernancaPage() {
-  exigirSessao(["sst", "admin"]);
+  exigirSessao(["sst", "admin", "diretoria"]);
   const sessao = getSessao();
   const podeEditar = sessao?.papel === "sst" || sessao?.papel === "admin";
   const itens = await carregarConfig();

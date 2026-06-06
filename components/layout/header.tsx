@@ -2,21 +2,23 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, Play, Square, ChevronDown, Check, Search, Bell, Sun, Moon, LogOut } from "lucide-react";
+import { Menu, Play, Square, ChevronDown, Check, Search, Bell, Sun, Moon, LogOut, Building2, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/app-state";
 import { useTheme } from "@/lib/theme";
 import { navItems } from "@/components/layout/nav";
-import type { UsuarioSessao } from "@/components/layout/shell";
+import type { UsuarioSessao, SeletorEmpresa } from "@/components/layout/shell";
 
 const PAPEL_LABEL: Record<UsuarioSessao["papel"], string> = {
   sst: "Gestor SST",
   clinica: "Clínica Parceira",
+  diretoria: "Diretoria GPS",
   admin: "Admin P2A",
 };
 const DEMO: { papel: UsuarioSessao["papel"]; email: string }[] = [
   { papel: "sst", email: "gestor@translog.com.br" },
   { papel: "clinica", email: "clinica@translog.com.br" },
+  { papel: "diretoria", email: "diretoria@gps.com.br" },
   { papel: "admin", email: "admin@p2a.tech" },
 ];
 
@@ -28,9 +30,11 @@ function iniciaisDe(nome: string): string {
 export function Header({
   onOpenMenu,
   usuario,
+  seletor,
 }: {
   onOpenMenu: () => void;
   usuario?: UsuarioSessao;
+  seletor?: SeletorEmpresa;
 }) {
   const { apresentando, toggleApresentacao } = useApp();
   const { tema, toggleTema } = useTheme();
@@ -38,6 +42,18 @@ export function Header({
   const pathname = usePathname();
   const [aberto, setAberto] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const [escAberto, setEscAberto] = useState(false);
+  const escRef = useRef<HTMLDivElement>(null);
+
+  const trocarEscopo = async (empresa: string) => {
+    setEscAberto(false);
+    const r = await fetch("/api/escopo", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ empresa }),
+    });
+    if (r.ok) router.refresh();
+  };
 
   const tituloAtual = navItems.find((n) => n.href === pathname)?.label ?? "PrevIA";
   const nome = usuario?.nome ?? "Usuário";
@@ -46,6 +62,7 @@ export function Header({
   useEffect(() => {
     const fora = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setAberto(false);
+      if (escRef.current && !escRef.current.contains(e.target as Node)) setEscAberto(false);
     };
     document.addEventListener("mousedown", fora);
     return () => document.removeEventListener("mousedown", fora);
@@ -85,6 +102,52 @@ export function Header({
           <div className="text-[11px] uppercase tracking-wider text-ink-muted">PrevIA · Painel</div>
           <div className="font-display text-base font-semibold text-ink">{tituloAtual}</div>
         </div>
+
+        {/* Seletor de empresa (Diretoria): Global ou empresa específica */}
+        {seletor && (
+          <div className="relative" ref={escRef}>
+            <button
+              onClick={() => setEscAberto((v) => !v)}
+              className="flex items-center gap-2 rounded-xl border border-ia/25 bg-ia/10 px-3 py-2 text-sm text-ink transition-colors hover:bg-ia/15"
+              title="Trocar empresa em foco"
+            >
+              {seletor.atual === "global" ? (
+                <Globe className="h-4 w-4 text-ia" />
+              ) : (
+                <Building2 className="h-4 w-4 text-ia" />
+              )}
+              <span className="hidden max-w-[160px] truncate font-medium sm:block">{seletor.label}</span>
+              <ChevronDown className="h-4 w-4 text-ink-muted" />
+            </button>
+            {escAberto && (
+              <div className="absolute left-0 z-40 mt-2 max-h-[70vh] w-64 overflow-y-auto rounded-xl border border-line/10 bg-navy-panel shadow-panel">
+                <div className="px-3 pb-1 pt-2 text-[11px] uppercase tracking-wider text-ink-muted">
+                  Empresa em foco
+                </div>
+                <button
+                  onClick={() => trocarEscopo("global")}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-fill/5"
+                >
+                  <Globe className="h-4 w-4 text-ia" />
+                  <span className="flex-1">Grupo GPS · consolidado</span>
+                  {seletor.atual === "global" && <Check className="h-4 w-4 text-ia" />}
+                </button>
+                <div className="my-1 border-t border-line/5" />
+                {seletor.opcoes.map((o) => (
+                  <button
+                    key={o.id}
+                    onClick={() => trocarEscopo(o.id)}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-fill/5"
+                  >
+                    <Building2 className="h-4 w-4 text-ink-muted" />
+                    <span className="flex-1 truncate">{o.nome}</span>
+                    {seletor.atual === o.id && <Check className="h-4 w-4 text-ia" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="hidden flex-1 justify-center px-6 lg:flex">

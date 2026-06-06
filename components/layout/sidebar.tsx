@@ -9,9 +9,18 @@ import { P2ALogo } from "@/components/brand/p2a-logo";
 import { empresa } from "@/lib/mock-data";
 import { Building2 } from "lucide-react";
 
-export function Sidebar({ onNavigate, vidas }: { onNavigate?: () => void; vidas?: number }) {
+export function Sidebar({
+  onNavigate,
+  vidas,
+  papel,
+}: {
+  onNavigate?: () => void;
+  vidas?: number;
+  papel?: "sst" | "clinica" | "admin" | "diretoria";
+}) {
   const pathname = usePathname();
   const vidasLabel = (vidas ?? 0).toLocaleString("pt-BR");
+  const itens = navItems.filter((i) => !i.papeis || (papel != null && i.papeis.includes(papel)));
 
   return (
     <aside className="flex h-full w-[264px] shrink-0 flex-col border-r border-line/5 bg-navy-deep/80">
@@ -33,7 +42,7 @@ export function Sidebar({ onNavigate, vidas }: { onNavigate?: () => void; vidas?
       </div>
 
       <nav className="mt-3 flex-1 space-y-1 overflow-y-auto px-3">
-        {navItems.map((item) => {
+        {itens.map((item) => {
           const ativo = pathname === item.href;
           const Icon = item.icon;
           const accent = item.ator === "clinica" ? "humano" : "ia";

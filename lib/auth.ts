@@ -25,7 +25,7 @@ function getSecret(): string {
 export const COOKIE = "previa_session";
 export const MAX_AGE = 60 * 60 * 8; // 8 horas
 
-export type Papel = "sst" | "clinica" | "admin";
+export type Papel = "sst" | "clinica" | "admin" | "diretoria";
 
 export interface Sessao {
   papel: Papel;
@@ -86,6 +86,7 @@ export function exigirSessao(papeis?: Papel[]): Sessao {
 export function homePorPapel(papel: Papel): string {
   if (papel === "clinica") return "/atendimento";
   if (papel === "admin") return "/admin";
+  if (papel === "diretoria") return "/diretoria";
   return "/dashboard";
 }
 

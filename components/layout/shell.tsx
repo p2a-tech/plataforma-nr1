@@ -10,18 +10,26 @@ import { cn } from "@/lib/utils";
 
 export interface UsuarioSessao {
   nome: string;
-  papel: "sst" | "clinica" | "admin";
+  papel: "sst" | "clinica" | "admin" | "diretoria";
   email: string;
+}
+
+export interface SeletorEmpresa {
+  atual: string; // "global" ou empresa_id
+  label: string;
+  opcoes: { id: string; nome: string }[];
 }
 
 export function Shell({
   children,
   vidas,
   usuario,
+  seletor,
 }: {
   children: React.ReactNode;
   vidas?: number;
   usuario?: UsuarioSessao;
+  seletor?: SeletorEmpresa;
 }) {
   const [menuAberto, setMenuAberto] = useState(false);
   const { apresentando, progresso } = useApp();
@@ -38,7 +46,7 @@ export function Shell({
     <div className="flex h-screen overflow-hidden">
       {/* Sidebar desktop */}
       <div className="hidden lg:block">
-        <Sidebar vidas={vidas} />
+        <Sidebar vidas={vidas} papel={usuario?.papel} />
       </div>
 
       {/* Drawer mobile */}
@@ -56,13 +64,13 @@ export function Shell({
             >
               <X className="h-5 w-5" />
             </button>
-            <Sidebar vidas={vidas} onNavigate={() => setMenuAberto(false)} />
+            <Sidebar vidas={vidas} papel={usuario?.papel} onNavigate={() => setMenuAberto(false)} />
           </div>
         </div>
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <Header onOpenMenu={() => setMenuAberto(true)} usuario={usuario} />
+        <Header onOpenMenu={() => setMenuAberto(true)} usuario={usuario} seletor={seletor} />
 
         {/* Barra do modo apresentação */}
         {apresentando && (

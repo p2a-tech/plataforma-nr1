@@ -21,14 +21,14 @@ import {
 } from "@/lib/mock-data";
 import { getConformidade } from "@/lib/queries";
 import { exigirSessao } from "@/lib/auth";
-import { withEmpresa } from "@/lib/tenant";
+import { withEscopo } from "@/lib/escopo";
 
 export const dynamic = "force-dynamic";
 
 export default async function ConformidadePage() {
-  const sessao = exigirSessao(["sst", "admin"]);
+  const sessao = exigirSessao(["sst", "admin", "diretoria"]);
   const { fonte, checklist, eventos: eventosESocial, trilha: trilhaAuditoria } =
-    await withEmpresa(sessao.empresa_id, () => getConformidade());
+    await withEscopo(sessao, () => getConformidade());
   const dadosReais = fonte === "real";
 
   const total = checklist.length;

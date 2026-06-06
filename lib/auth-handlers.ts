@@ -29,6 +29,7 @@ const DEMO_USERS: Record<string, { papel: Papel; nome: string; clinica_id: strin
   "gestor@translog.com.br": { papel: "sst", nome: "Marina Alves", clinica_id: null },
   "clinica@translog.com.br": { papel: "clinica", nome: "Clínica Parceira", clinica_id: "demo-clinica" },
   "admin@p2a.tech": { papel: "admin", nome: "Admin P2A", clinica_id: null },
+  "diretoria@gps.com.br": { papel: "diretoria", nome: "Diretoria GPS", clinica_id: null },
 };
 
 function setSessionCookie(token: string) {

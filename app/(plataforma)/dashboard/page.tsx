@@ -17,7 +17,7 @@ import { RiscoAdesaoChart, Sparkline } from "@/components/charts";
 import { Heatmap } from "@/components/heatmap";
 import { corSeveridade, empresa } from "@/lib/mock-data";
 import { exigirSessao } from "@/lib/auth";
-import { withEmpresa } from "@/lib/tenant";
+import { withEscopo } from "@/lib/escopo";
 import {
   getHeatmap,
   getAlertas,
@@ -38,7 +38,7 @@ function tempoDesde(iso: string | null): string {
 }
 
 export default async function DashboardPage() {
-  const sessao = exigirSessao(["sst", "admin"]); // gate na página + escopo de empresa
+  const sessao = exigirSessao(["sst", "admin", "diretoria"]); // gate na página + escopo de empresa
   const [heat, alert, serie, resumo, pgr, metrics] = await withEmpresa(
     sessao.empresa_id,
     () =>

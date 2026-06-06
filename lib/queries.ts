@@ -3,7 +3,7 @@ import { sql, dbHabilitado } from "@/lib/db";
 import { OFENSORES_LABEL, K_MIN, type OfensorTag } from "@previa/contracts";
 import { hashConteudo } from "@/lib/pgr";
 import { energiaParaRisco } from "@/lib/radar";
-import { empresaAtual } from "@/lib/tenant";
+import { empresasAtuais } from "@/lib/tenant";
 import { empresa } from "@/lib/mock-data";
 import {
   serieRisco as serieMock,
@@ -67,10 +67,10 @@ export async function getResumo(): Promise<ResumoReal> {
     ultimaAtualizacao: null,
   };
   if (!dbHabilitado) return vazio;
-  const emp = empresaAtual();
+  const emp = empresasAtuais();
   try {
     const [tot] = await sql<{ n: number }[]>`
-      select count(*)::int as n from public.eventos_agregados where empresa_id = ${emp}
+      select count(*)::int as n from public.eventos_agregados where empresa_id = ANY(${emp})
     `;
     if (!tot || tot.n === 0) return vazio;
 
@@ -78,13 +78,13 @@ export async function getResumo(): Promise<ResumoReal> {
       select count(*)::int as n from (
         select cluster_setor, cluster_turno, coalesce(cluster_site,'') as site
         from public.eventos_agregados
-        where empresa_id = ${emp} and iniciada_em > now() - interval '90 days'
+        where empresa_id = ANY(${emp}) and iniciada_em > now() - interval '90 days'
         group by 1,2,3
         having avg(${sql.unsafe(SCORE_SQL)}) >= 60
       ) c
     `;
     const [ult] = await sql<{ t: string }[]>`
-      select max(criado_em)::text as t from public.eventos_agregados where empresa_id = ${emp}
+      select max(criado_em)::text as t from public.eventos_agregados where empresa_id = ANY(${emp})
     `;
     return {
       fonte: "real",
@@ -104,7 +104,7 @@ export async function getResumo(): Promise<ResumoReal> {
 export async function getHeatmap(): Promise<{ fonte: Fonte; linhas: LinhaHeatmap[] }> {
   // Dashboard 100% real: sem dados → vazio (nunca o mock).
   if (!dbHabilitado) return { fonte: "mock", linhas: [] };
-  const emp = empresaAtual();
+  const emp = empresasAtuais();
   try {
     // Radar é o sinal PRIMÁRIO de escuta (amplo). Clínica é fallback (profundo).
     // k-anonymity: só clusters de radar com k ≥ K_MIN entram.
@@ -113,14 +113,14 @@ export async function getHeatmap(): Promise<{ fonte: Fonte; linhas: LinhaHeatmap
         select cluster_setor as setor, cluster_turno as turno,
                avg(energia)::float8 as avg_en, count(*)::int as n
         from public.pulso_respostas
-        where empresa_id = ${emp}
+        where empresa_id = ANY(${emp})
         group by cluster_setor, cluster_turno
       `,
       sql<{ setor: string; turno: string; risco: number }[]>`
         select cluster_setor as setor, cluster_turno as turno,
                avg(${sql.unsafe(SCORE_SQL)})::int as risco
         from public.eventos_agregados
-        where empresa_id = ${emp}
+        where empresa_id = ANY(${emp})
         group by cluster_setor, cluster_turno
       `,
     ]);
@@ -178,7 +178,7 @@ function tempoRelativo(iso: string): string {
 
 export async function getAlertas(): Promise<{ fonte: Fonte; alertas: Alerta[] }> {
   if (!dbHabilitado) return { fonte: "mock", alertas: [] };
-  const emp = empresaAtual();
+  const emp = empresasAtuais();
   try {
     const clusters = await sql<
       {
@@ -197,7 +197,7 @@ export async function getAlertas(): Promise<{ fonte: Fonte; alertas: Alerta[] }>
              count(*)::int as n,
              max(iniciada_em)::text as ultima
       from public.eventos_agregados
-      where empresa_id = ${emp} and iniciada_em > now() - interval '90 days'
+      where empresa_id = ANY(${emp}) and iniciada_em > now() - interval '90 days'
       group by cluster_setor, cluster_turno, cluster_site
       having avg(${sql.unsafe(SCORE_SQL)}) >= 45
       order by avg(${sql.unsafe(SCORE_SQL)}) desc, max(iniciada_em) desc
@@ -213,7 +213,7 @@ export async function getAlertas(): Promise<{ fonte: Fonte; alertas: Alerta[] }>
              o.tag as tag, count(*)::int as c
       from public.eventos_agregados e
       join public.ofensores_evento o on o.evento_id = e.id
-      where e.empresa_id = ${emp} and e.iniciada_em > now() - interval '90 days'
+      where e.empresa_id = ANY(${emp}) and e.iniciada_em > now() - interval '90 days'
       group by e.cluster_setor, e.cluster_turno, o.tag
     `;
     const topOfensores = (setor: string, turno: string): OfensorTag[] =>
@@ -266,13 +266,13 @@ const MES_PT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "
 
 export async function getSerie(): Promise<{ fonte: Fonte; serie: PontoSerie[] }> {
   if (!dbHabilitado) return { fonte: "mock", serie: serieMock };
-  const emp = empresaAtual();
+  const emp = empresasAtuais();
   try {
     const rows = await sql<{ mnum: number; risco: number }[]>`
       select extract(month from date_trunc('month', iniciada_em))::int as mnum,
              avg(${sql.unsafe(SCORE_SQL)})::int as risco
       from public.eventos_agregados
-      where empresa_id = ${emp} and iniciada_em > now() - interval '6 months'
+      where empresa_id = ANY(${emp}) and iniciada_em > now() - interval '6 months'
       group by date_trunc('month', iniciada_em)
       order by date_trunc('month', iniciada_em)
     `;
@@ -344,7 +344,7 @@ function probDe1a5(ratio: number): 1 | 2 | 3 | 4 | 5 {
 
 export async function getInventarioRiscos(): Promise<{ fonte: Fonte; riscos: Risco[] }> {
   if (!dbHabilitado) return { fonte: "mock", riscos: inventarioMock };
-  const emp = empresaAtual();
+  const emp = empresasAtuais();
   try {
     // Combina as DUAS fontes reais por (setor × ofensor):
     //  - clínica (eventos_agregados + ofensores_evento): severidade do atendimento
@@ -359,7 +359,7 @@ export async function getInventarioRiscos(): Promise<{ fonte: Fonte; riscos: Ris
                avg(${sql.unsafe(SCORE_SQL)})::float8 as score
         from public.eventos_agregados e
         join public.ofensores_evento o on o.evento_id = e.id
-        where e.empresa_id = ${emp}
+        where e.empresa_id = ANY(${emp})
         group by e.cluster_setor, o.tag
       ),
       radar as (
@@ -367,7 +367,7 @@ export async function getInventarioRiscos(): Promise<{ fonte: Fonte; riscos: Ris
                count(*)::int as oc,
                (round((5 - avg(energia)) / 4 * 100))::float8 as score
         from public.pulso_respostas
-        where empresa_id = ${emp} and ofensor is not null
+        where empresa_id = ANY(${emp}) and ofensor is not null
         group by cluster_setor, ofensor
       ),
       uni as (
@@ -423,14 +423,14 @@ export async function getEscuta(): Promise<{
   total: number;
 }> {
   if (!dbHabilitado) return { fonte: "mock", porSetor: [], total: 0 };
-  const emp = empresaAtual();
+  const emp = empresasAtuais();
   try {
     const rows = await sql<{ setor: string; n: number; risco: number }[]>`
       select cluster_setor as setor,
              count(*)::int as n,
              avg(${sql.unsafe(SCORE_SQL)})::int as risco
       from public.eventos_agregados
-      where empresa_id = ${emp}
+      where empresa_id = ANY(${emp})
       group by cluster_setor
       order by count(*) desc
     `;
@@ -466,14 +466,14 @@ export async function getConformidade(): Promise<ConformidadeData> {
     trilha: trilhaMock,
   };
   if (!dbHabilitado) return mockData;
-  const emp = empresaAtual();
+  const emp = empresasAtuais();
   try {
     const [tot] = await sql<{ n: number; prot: number; ultima: string | null }[]>`
       select count(*)::int as n,
              count(*) filter (where protocolo_emergencia)::int as prot,
              max(criado_em)::text as ultima
       from public.eventos_agregados
-      where empresa_id = ${emp}
+      where empresa_id = ANY(${emp})
     `;
     if (!tot || tot.n === 0) return mockData;
 
@@ -545,7 +545,7 @@ export async function getConformidade(): Promise<ConformidadeData> {
       select cluster_setor as setor, cluster_turno as turno, cluster_site as site,
              severidade_estimada as sev, iniciada_em::text as iniciada, criado_em::text as criado
       from public.eventos_agregados
-      where empresa_id = ${emp}
+      where empresa_id = ANY(${emp})
       order by criado_em desc
       limit 4
     `;
@@ -682,7 +682,7 @@ export async function getPgrStatus(): Promise<PgrStatus> {
         select revisao, assinante_nome, assinante_papel, assinante_registro,
                assinado_em::text as assinado_em, conteudo_hash, selo
         from public.pgr_assinaturas
-        where empresa_id = ${empresaAtual()}
+        where empresa_id = ANY(${empresasAtuais()})
         order by assinado_em desc
       `;
     } catch (e) {
@@ -730,17 +730,21 @@ export async function getRadarResumo(): Promise<RadarResumo> {
     totalRespostas: 0,
   };
   if (!dbHabilitado) return vazio;
-  const emp = empresaAtual();
+  const emp = empresasAtuais();
   try {
     const [r] = await sql<
       { total: number; semana: number; tempo: number; alcance: number }[]
     >`
       select
-        (select count(*)::int from public.pulso_respostas where empresa_id = ${emp}) as total,
+        (select count(*)::int from public.pulso_respostas where empresa_id = ANY(${emp})) as total,
         (select count(*)::int from public.pulso_respostas
-          where empresa_id = ${emp} and respondido_em > now() - interval '7 days') as semana,
-        (select coalesce(round(avg(duracao_seg)),0)::int from public.pulso_respostas where empresa_id = ${emp}) as tempo,
-        (select coalesce(sum(convidados),0)::int from public.pulso_alvos where empresa_id = ${emp}) as alcance
+          where empresa_id = ANY(${emp}) and respondido_em > now() - interval '7 days') as semana,
+        (select coalesce(round(avg(duracao_seg)),0)::int from public.pulso_respostas where empresa_id = ANY(${emp})) as tempo,
+        -- alcance: convidados do radar (piloto) OU quadro de colaboradores (grupo GPS)
+        greatest(
+          (select coalesce(sum(convidados),0)::int from public.pulso_alvos where empresa_id = ANY(${emp})),
+          (select coalesce(sum(colaboradores),0)::int from public.empresas where id = ANY(${emp}))
+        ) as alcance
     `;
     if (!r || r.total === 0) return vazio;
     const adesao = r.alcance > 0 ? Math.min(100, Math.round((r.total / r.alcance) * 100)) : 0;
@@ -760,10 +764,10 @@ export async function getRadarResumo(): Promise<RadarResumo> {
 
 export async function getRadarCanais(): Promise<{ fonte: Fonte; canais: { canal: string; valor: number }[] }> {
   if (!dbHabilitado) return { fonte: "mock", canais: [] };
-  const emp = empresaAtual();
+  const emp = empresasAtuais();
   try {
     const rows = await sql<{ canal: string; n: number }[]>`
-      select canal, count(*)::int as n from public.pulso_respostas where empresa_id = ${emp} group by canal
+      select canal, count(*)::int as n from public.pulso_respostas where empresa_id = ANY(${emp}) group by canal
     `;
     const total = rows.reduce((a, b) => a + b.n, 0);
     if (total === 0) return { fonte: "mock", canais: [] };
@@ -785,12 +789,12 @@ export async function getRadarRespostasSemana(): Promise<{
   dados: { dia: string; respostas: number }[];
 }> {
   if (!dbHabilitado) return { fonte: "mock", dados: [] };
-  const emp = empresaAtual();
+  const emp = empresasAtuais();
   try {
     const rows = await sql<{ d: string; n: number }[]>`
       select date_trunc('day', respondido_em)::date::text as d, count(*)::int as n
       from public.pulso_respostas
-      where empresa_id = ${emp} and respondido_em > now() - interval '7 days'
+      where empresa_id = ANY(${emp}) and respondido_em > now() - interval '7 days'
       group by 1 order by 1
     `;
     if (rows.length === 0) return { fonte: "mock", dados: [] };
@@ -807,13 +811,13 @@ export async function getRadarPorSetor(): Promise<{
   setores: { setor: string; respostas: number; risco: number }[];
 }> {
   if (!dbHabilitado) return { fonte: "mock", setores: [] };
-  const emp = empresaAtual();
+  const emp = empresasAtuais();
   try {
     // k-anonymity: só setores com k ≥ K_MIN respostas.
     const rows = await sql<{ setor: string; n: number; avg_en: number }[]>`
       select cluster_setor as setor, count(*)::int as n, avg(energia)::float8 as avg_en
       from public.pulso_respostas
-      where empresa_id = ${emp}
+      where empresa_id = ANY(${emp})
       group by cluster_setor
       having count(*) >= ${K_MIN}
       order by avg(energia) asc
@@ -836,12 +840,12 @@ export async function getRadarOfensores(): Promise<{
   ofensores: { tag: OfensorTag; label: string; n: number }[];
 }> {
   if (!dbHabilitado) return { fonte: "mock", ofensores: [] };
-  const emp = empresaAtual();
+  const emp = empresasAtuais();
   try {
     const rows = await sql<{ tag: OfensorTag; n: number }[]>`
       select ofensor as tag, count(*)::int as n
       from public.pulso_respostas
-      where empresa_id = ${emp} and ofensor is not null
+      where empresa_id = ANY(${emp}) and ofensor is not null
       group by ofensor
       order by count(*) desc
       limit 6
@@ -888,19 +892,19 @@ export async function getDashboardMetrics(): Promise<{
     }
 
     // Sparklines reais: volume por dia (7 dias).
-    const emp = empresaAtual();
+    const emp = empresasAtuais();
     const [pulsosDia, atendDia] = await Promise.all([
       sql<{ n: number }[]>`
         select count(*)::int as n
         from public.pulso_respostas
-        where empresa_id = ${emp} and respondido_em > now() - interval '7 days'
+        where empresa_id = ANY(${emp}) and respondido_em > now() - interval '7 days'
         group by date_trunc('day', respondido_em)
         order by date_trunc('day', respondido_em)
       `,
       sql<{ n: number }[]>`
         select count(*)::int as n
         from public.eventos_agregados
-        where empresa_id = ${emp} and criado_em > now() - interval '7 days'
+        where empresa_id = ANY(${emp}) and criado_em > now() - interval '7 days'
         group by date_trunc('day', criado_em)
         order by date_trunc('day', criado_em)
       `,
@@ -913,7 +917,7 @@ export async function getDashboardMetrics(): Promise<{
         count(*) filter (where respondido_em <= now() - interval '7 days'
                           and respondido_em > now() - interval '14 days')::int as ant
       from public.pulso_respostas
-      where empresa_id = ${emp}
+      where empresa_id = ANY(${emp})
     `;
     const deltaPulsos = pw.atual - pw.ant;
 
@@ -981,14 +985,14 @@ export async function getDashboardMetrics(): Promise<{
 /** Série diária real (14 dias): índice de risco (radar) + respostas/dia. */
 export async function getSerieRadarDiaria(): Promise<{ fonte: Fonte; serie: PontoSerie[] }> {
   if (!dbHabilitado) return { fonte: "mock", serie: [] };
-  const emp = empresaAtual();
+  const emp = empresasAtuais();
   try {
     const rows = await sql<{ d: string; risco: number; respostas: number }[]>`
       select date_trunc('day', respondido_em)::date::text as d,
              round((5 - avg(energia)) / 4 * 100)::int as risco,
              count(*)::int as respostas
       from public.pulso_respostas
-      where empresa_id = ${emp} and respondido_em > now() - interval '14 days'
+      where empresa_id = ANY(${emp}) and respondido_em > now() - interval '14 days'
       group by 1 order by 1
     `;
     if (rows.length === 0) return { fonte: "mock", serie: [] };

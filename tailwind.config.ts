@@ -71,12 +71,17 @@ const config: Config = {
           "0%": { strokeDashoffset: "24" },
           "100%": { strokeDashoffset: "0" },
         },
+        "scroll-x": {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(-50%)" },
+        },
       },
       animation: {
         radar: "radar 3s ease-out infinite",
         "fade-up": "fade-up 0.5s ease-out both",
         pulseDot: "pulseDot 1.6s ease-in-out infinite",
         flow: "flow 1s linear infinite",
+        "scroll-x": "scroll-x 26s linear infinite",
       },
     },
   },

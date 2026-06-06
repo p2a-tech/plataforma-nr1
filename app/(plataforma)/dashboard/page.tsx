@@ -21,7 +21,7 @@ import { withEscopo, resolverEscopo } from "@/lib/escopo";
 import { getEmpresasRiscoAlto } from "@/lib/grupo-risco";
 import { RiscoGrupo } from "@/components/risco-grupo";
 import { getLocais } from "@/lib/mapa-brasil";
-import { MapaBrasil } from "@/components/mapa-brasil";
+import { GloboHud } from "@/components/globo-hud";
 import {
   getHeatmap,
   getAlertas,
@@ -94,8 +94,8 @@ export default async function DashboardPage() {
             ))}
           </div>
 
-          {/* Mapa do Brasil — só Diretoria/Admin (praças atendidas no escopo) */}
-          {mapaLocais && <MapaBrasil locais={mapaLocais} label={escopoTxt} />}
+          {/* Globo terrestre girando — só Diretoria/Admin (cobertura no escopo) */}
+          {mapaLocais && <GloboHud label={escopoTxt} cidades={mapaLocais.length} />}
 
           {/* Heatmap + Série temporal */}
           <div className="grid gap-4 lg:grid-cols-5">

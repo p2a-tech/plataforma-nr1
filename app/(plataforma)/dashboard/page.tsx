@@ -22,6 +22,7 @@ import { getEmpresasRiscoAlto } from "@/lib/grupo-risco";
 import { RiscoGrupo } from "@/components/risco-grupo";
 import { getLocais } from "@/lib/mapa-brasil";
 import { GloboHud } from "@/components/globo-hud";
+import { MapaBrasil } from "@/components/mapa-brasil";
 import {
   getHeatmap,
   getAlertas,
@@ -94,8 +95,13 @@ export default async function DashboardPage() {
             ))}
           </div>
 
-          {/* Globo terrestre girando — só Diretoria/Admin (cobertura no escopo) */}
-          {mapaLocais && <GloboHud label={escopoTxt} cidades={mapaLocais.length} />}
+          {/* Só Diretoria/Admin: Global → globo girando; empresa → mapa do Brasil c/ pontos */}
+          {mapaLocais &&
+            (escopo.modo === "global" ? (
+              <GloboHud label={escopoTxt} cidades={mapaLocais.length} />
+            ) : (
+              <MapaBrasil locais={mapaLocais} label={escopoTxt} />
+            ))}
 
           {/* Heatmap + Série temporal */}
           <div className="grid gap-4 lg:grid-cols-5">

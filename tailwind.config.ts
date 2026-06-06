@@ -75,6 +75,10 @@ const config: Config = {
           from: { transform: "translateX(0)" },
           to: { transform: "translateX(-50%)" },
         },
+        "zoom-in": {
+          "0%": { opacity: "0", transform: "scale(0.82)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
+        },
       },
       animation: {
         radar: "radar 3s ease-out infinite",
@@ -82,6 +86,7 @@ const config: Config = {
         pulseDot: "pulseDot 1.6s ease-in-out infinite",
         flow: "flow 1s linear infinite",
         "scroll-x": "scroll-x 26s linear infinite",
+        "zoom-in": "zoom-in 0.5s ease-out both",
       },
     },
   },

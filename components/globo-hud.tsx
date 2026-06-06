@@ -75,21 +75,6 @@ export function GloboHud({ label, cidades }: { label: string; cidades: number })
               </g>
             </svg>
           </div>
-
-          {/* blips de "sinal ao vivo" sobre o globo */}
-          {[
-            { x: "44%", y: "58%" },
-            { x: "60%", y: "46%" },
-            { x: "38%", y: "40%" },
-          ].map((p, i) => (
-            <span
-              key={i}
-              className="absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#cffbff] shadow-[0_0_10px_3px_rgba(0,194,209,0.8)]"
-              style={{ left: p.x, top: p.y }}
-            >
-              <span className="absolute inset-0 animate-ping rounded-full bg-ia/60" />
-            </span>
-          ))}
         </div>
       </div>
     </Card>

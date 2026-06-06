@@ -26,13 +26,13 @@ export default async function PlataformaLayout({
   // Vidas monitoradas = alcance real do Radar (convidados).
   const radar = await withEscopo(sessao, () => getRadarResumo());
 
-  // Seletor de empresa (Diretoria/Admin): Global ou empresa específica do grupo.
+  // Escopo atual (rótulo da unidade/grupo exibido na sidebar e no seletor).
   const ehDiretoria = sessao.papel === "diretoria" || sessao.papel === "admin";
-  const escopo = ehDiretoria ? await resolverEscopo(sessao) : null;
+  const escopo = await resolverEscopo(sessao);
   const seletor = ehDiretoria
     ? {
-        atual: escopo?.empresaId ?? "global",
-        label: escopo?.label ?? "Grupo GPS · consolidado",
+        atual: escopo.empresaId ?? "global",
+        label: escopo.label,
         opcoes: await listaGrupo(),
       }
     : undefined;
@@ -41,6 +41,7 @@ export default async function PlataformaLayout({
     <AppProvider>
       <Shell
         vidas={radar.alcance}
+        empresaNome={escopo.label}
         usuario={{ nome: sessao.nome ?? sessao.email, papel: sessao.papel, email: sessao.email }}
         seletor={seletor}
       >

@@ -15,9 +15,9 @@ import Link from "next/link";
 import { Card, CardTitle, PageHeader, Badge, ProgressBar } from "@/components/ui/primitives";
 import { RiscoAdesaoChart, Sparkline } from "@/components/charts";
 import { Heatmap } from "@/components/heatmap";
-import { corSeveridade, empresa } from "@/lib/mock-data";
+import { corSeveridade } from "@/lib/mock-data";
 import { exigirSessao } from "@/lib/auth";
-import { withEscopo } from "@/lib/escopo";
+import { withEscopo, resolverEscopo } from "@/lib/escopo";
 import {
   getHeatmap,
   getAlertas,
@@ -53,12 +53,14 @@ export default async function DashboardPage() {
   );
 
   const dadosReais = metrics.fonte === "real";
+  const escopo = await resolverEscopo(sessao);
+  const escopoTxt = escopo.segmento ? `${escopo.label} · ${escopo.segmento}` : escopo.label;
 
   return (
     <div className="space-y-6">
       <PageHeader
         titulo="Visão de Compliance & Saúde Organizacional"
-        descricao={`${empresa.nome} · ${empresa.segmento}. Índice de risco psicossocial e conformidade NR-1 em tempo real.`}
+        descricao={`${escopoTxt}. Índice de risco psicossocial e conformidade NR-1 em tempo real.`}
         badge={
           dadosReais ? (
             <Badge tone="ok">

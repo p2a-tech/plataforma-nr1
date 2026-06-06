@@ -12,14 +12,17 @@ import { Building2 } from "lucide-react";
 export function Sidebar({
   onNavigate,
   vidas,
+  empresaNome,
   papel,
 }: {
   onNavigate?: () => void;
   vidas?: number;
+  empresaNome?: string;
   papel?: "sst" | "clinica" | "admin" | "diretoria";
 }) {
   const pathname = usePathname();
   const vidasLabel = (vidas ?? 0).toLocaleString("pt-BR");
+  const nomeBox = empresaNome ?? empresa.nome;
   const itens = navItems.filter((i) => !i.papeis || (papel != null && i.papeis.includes(papel)));
 
   return (
@@ -36,8 +39,8 @@ export function Sidebar({
           <Building2 className="h-4 w-4" />
         </div>
         <div className="min-w-0">
-          <div className="truncate text-sm font-medium text-ink">{empresa.nome}</div>
-          <div className="text-xs text-ink-muted">{vidasLabel} vidas · {empresa.unidades} unidades</div>
+          <div className="truncate text-sm font-medium text-ink">{nomeBox}</div>
+          <div className="text-xs text-ink-muted">{vidasLabel} vidas monitoradas</div>
         </div>
       </div>
 

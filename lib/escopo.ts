@@ -19,6 +19,7 @@ export interface Escopo {
   ids: string[];
   empresaId: string | null;
   label: string;
+  segmento: string | null;
 }
 
 function ehDiretoria(p: string): boolean {
@@ -47,19 +48,38 @@ export async function listaGrupo(): Promise<{ id: string; nome: string }[]> {
 }
 
 /** Resolve o escopo atual a partir da sessão + cookie. */
+async function infoEmpresa(id: string): Promise<{ nome: string; segmento: string | null } | null> {
+  if (!dbHabilitado) return null;
+  const [emp] = await sql<{ nome: string; segmento: string | null }[]>`
+    select nome, segmento from public.empresas where id = ${id} limit 1
+  `;
+  return emp ?? null;
+}
+
+const GLOBAL = async (): Promise<Escopo> => ({
+  modo: "global",
+  ids: await idsGrupo(),
+  empresaId: null,
+  label: "Grupo GPS · consolidado",
+  segmento: null,
+});
+
 export async function resolverEscopo(sessao: Sessao): Promise<Escopo> {
   if (!ehDiretoria(sessao.papel)) {
-    return { modo: "empresa", ids: [sessao.empresa_id], empresaId: sessao.empresa_id, label: "" };
+    const emp = await infoEmpresa(sessao.empresa_id);
+    return {
+      modo: "empresa",
+      ids: [sessao.empresa_id],
+      empresaId: sessao.empresa_id,
+      label: emp?.nome ?? sessao.empresa_id,
+      segmento: emp?.segmento ?? null,
+    };
   }
   const sel = cookies().get(COOKIE_ESCOPO)?.value;
-  if (!sel || sel === "global") {
-    return { modo: "global", ids: await idsGrupo(), empresaId: null, label: "Grupo GPS · consolidado" };
-  }
-  const [emp] = await sql<{ nome: string }[]>`select nome from public.empresas where id = ${sel} limit 1`;
-  if (!emp) {
-    return { modo: "global", ids: await idsGrupo(), empresaId: null, label: "Grupo GPS · consolidado" };
-  }
-  return { modo: "empresa", ids: [sel], empresaId: sel, label: emp.nome };
+  if (!sel || sel === "global") return GLOBAL();
+  const emp = await infoEmpresa(sel);
+  if (!emp) return GLOBAL();
+  return { modo: "empresa", ids: [sel], empresaId: sel, label: emp.nome, segmento: emp.segmento };
 }
 
 /** Açúcar: resolve o escopo e roda fn dentro dele (para usar nas páginas). */

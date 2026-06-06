@@ -23,11 +23,13 @@ export interface SeletorEmpresa {
 export function Shell({
   children,
   vidas,
+  empresaNome,
   usuario,
   seletor,
 }: {
   children: React.ReactNode;
   vidas?: number;
+  empresaNome?: string;
   usuario?: UsuarioSessao;
   seletor?: SeletorEmpresa;
 }) {
@@ -46,7 +48,7 @@ export function Shell({
     <div className="flex h-screen overflow-hidden">
       {/* Sidebar desktop */}
       <div className="hidden lg:block">
-        <Sidebar vidas={vidas} papel={usuario?.papel} />
+        <Sidebar vidas={vidas} empresaNome={empresaNome} papel={usuario?.papel} />
       </div>
 
       {/* Drawer mobile */}
@@ -64,7 +66,7 @@ export function Shell({
             >
               <X className="h-5 w-5" />
             </button>
-            <Sidebar vidas={vidas} papel={usuario?.papel} onNavigate={() => setMenuAberto(false)} />
+            <Sidebar vidas={vidas} empresaNome={empresaNome} papel={usuario?.papel} onNavigate={() => setMenuAberto(false)} />
           </div>
         </div>
       )}

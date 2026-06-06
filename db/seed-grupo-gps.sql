@@ -39,9 +39,11 @@ delete from public.pulso_respostas where empresa_id in (
   'emp_campseg','emp_trademark','emp_engie','emp_gpstec','emp_topservice');
 
 -- 3) pulso_respostas: adesão ~72-88% por empresa (hash determinístico),
---    energia centrada por empresa (risco heterogêneo), datas nas últimas ~20h
+--    energia centrada por empresa (risco heterogêneo), datas nas últimas ~20h.
+--    SETORES por SEGMENTO (cada segmento tem 4 específicos + 'Administrativo'
+--    genérico, compartilhado — no consolidado aparece uma única vez via group by).
 with plano as (
-  select e.id,
+  select e.id, e.segmento,
          (2 + (abs(hashtext(e.id)) % 3))                                          as centro,
          floor(e.colaboradores * (0.72 + (abs(hashtext(e.id)) % 17) / 100.0))::int as n_resp
   from public.empresas e
@@ -52,7 +54,14 @@ insert into public.pulso_respostas
   (empresa_id, cluster_setor, cluster_turno, cluster_site, canal, energia, ofensor, duracao_seg, respondido_em)
 select
   pl.id,
-  (array['Logística','Atendimento (SAC)','Produção','Administrativo','Manutenção','Comercial'])[1 + floor(random()*6)],
+  case pl.segmento
+    when 'Facilities & Serviços'       then (array['Manutenção Predial','Portaria','Recepção','Jardinagem','Administrativo'])[1 + floor(random()*5)]
+    when 'Limpeza & Conservação'       then (array['Limpeza & Conservação','Áreas Comuns','Sanitização','Coleta de Resíduos','Administrativo'])[1 + floor(random()*5)]
+    when 'Segurança Patrimonial'       then (array['Vigilância','Ronda','Monitoramento (CFTV)','Controle de Acesso','Administrativo'])[1 + floor(random()*5)]
+    when 'RH & Trabalho Temporário'    then (array['Recrutamento & Seleção','Alocação','Departamento Pessoal','Atendimento (SAC)','Administrativo'])[1 + floor(random()*5)]
+    when 'Tecnologia & Engenharia'     then (array['Desenvolvimento','Service Desk','Infraestrutura','Projetos & Engenharia','Administrativo'])[1 + floor(random()*5)]
+    else (array['Operações','Administrativo'])[1 + floor(random()*2)]
+  end,
   (array['manha','tarde','noite','madrugada'])[1 + floor(random()*4)],
   null,
   (array['whatsapp','whatsapp','whatsapp','app','totem'])[1 + floor(random()*5)],

@@ -20,6 +20,8 @@ import { exigirSessao } from "@/lib/auth";
 import { withEscopo, resolverEscopo } from "@/lib/escopo";
 import { getEmpresasRiscoAlto } from "@/lib/grupo-risco";
 import { RiscoGrupo } from "@/components/risco-grupo";
+import { getLocais } from "@/lib/mapa-brasil";
+import { MapaBrasil } from "@/components/mapa-brasil";
 import {
   getHeatmap,
   getAlertas,
@@ -59,6 +61,9 @@ export default async function DashboardPage() {
   const escopoTxt = escopo.segmento ? `${escopo.label} · ${escopo.segmento}` : escopo.label;
   // Consolidado do grupo: empresas em risco alto (só na visão Global da Diretoria).
   const riscoGrupo = escopo.modo === "global" ? await getEmpresasRiscoAlto() : null;
+  // Mapa do Brasil (só Diretoria/Admin): praças atendidas conforme o filtro.
+  const ehDiretoria = sessao.papel === "diretoria" || sessao.papel === "admin";
+  const mapaLocais = ehDiretoria ? getLocais(escopo.ids) : null;
 
   return (
     <div className="space-y-6">
@@ -88,6 +93,9 @@ export default async function DashboardPage() {
               <MetricCard key={m.id} m={m} />
             ))}
           </div>
+
+          {/* Mapa do Brasil — só Diretoria/Admin (praças atendidas no escopo) */}
+          {mapaLocais && <MapaBrasil locais={mapaLocais} label={escopoTxt} />}
 
           {/* Heatmap + Série temporal */}
           <div className="grid gap-4 lg:grid-cols-5">

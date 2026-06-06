@@ -3,15 +3,25 @@ import { Card, CardTitle, Badge } from "@/components/ui/primitives";
 import { OUTLINE, VB, type LocalMapa } from "@/lib/mapa-brasil";
 
 /**
- * Mapa do Brasil em estilo HUD/holográfico (Diretoria): silhueta em ciano com
- * glow, grade wireframe, anéis orbitais e pontos pulsantes nas praças atendidas
- * conforme o filtro (empresa ou Global).
+ * Mapa do Brasil em estilo HUD/holográfico (Diretoria): silhueta ciano com glow
+ * intenso, grade wireframe, anéis orbitais girando, varredura de radar e pontos
+ * pulsantes nas praças. Comportamento por filtro (empresa ou Global).
  */
 export function MapaBrasil({ locais, label }: { locais: LocalMapa[]; label: string }) {
   const C = VB / 2;
-  // grade (parDSalelos/meridianos) dentro do contorno
-  const linhas = [];
-  for (let v = 60; v < VB; v += 48) linhas.push(v);
+  const linhas: number[] = [];
+  for (let v = 60; v < VB; v += 46) linhas.push(v);
+  const rot = (from: string, to: string, dur: string) => (
+    <animateTransform
+      attributeName="transform"
+      attributeType="XML"
+      type="rotate"
+      from={from}
+      to={to}
+      dur={dur}
+      repeatCount="indefinite"
+    />
+  );
 
   return (
     <Card className="overflow-hidden">
@@ -23,30 +33,38 @@ export function MapaBrasil({ locais, label }: { locais: LocalMapa[]; label: stri
         Presença no Brasil
       </CardTitle>
 
-      <div className="relative overflow-hidden rounded-2xl bg-[#04121d] ring-1 ring-inset ring-ia/10">
-        {/* brilho radial de fundo + grade pontilhada (HUD) */}
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_46%,rgba(0,194,209,0.20),transparent_62%)]" />
+      <div className="relative overflow-hidden rounded-2xl bg-[#03101a] ring-1 ring-inset ring-ia/15">
+        {/* brilho radial pulsante + grade pontilhada */}
+        <div className="pointer-events-none absolute inset-0 animate-pulse bg-[radial-gradient(circle_at_50%_46%,rgba(0,194,209,0.30),transparent_60%)]" />
         <div
-          className="pointer-events-none absolute inset-0 opacity-[0.18]"
+          className="pointer-events-none absolute inset-0 opacity-20"
           style={{
             backgroundImage:
               "linear-gradient(rgba(0,194,209,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(0,194,209,0.5) 1px, transparent 1px)",
             backgroundSize: "26px 26px",
           }}
         />
+        {/* varredura de radar (conic) girando */}
+        <div
+          className="pointer-events-none absolute left-1/2 top-[46%] aspect-square w-[88%] -translate-x-1/2 -translate-y-1/2 rounded-full animate-spin [animation-duration:7s]"
+          style={{ background: "conic-gradient(from 0deg, rgba(0,194,209,0.35), rgba(0,194,209,0.04) 22%, transparent 38%)" }}
+        />
 
         <svg viewBox={`0 0 ${VB} ${VB}`} className="relative mx-auto block h-auto w-full max-w-[460px]">
           <defs>
-            <filter id="hudGlow" x="-60%" y="-60%" width="220%" height="220%">
-              <feGaussianBlur stdDeviation="5" result="b" />
+            <filter id="hudGlow" x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="7" result="b" />
               <feMerge>
                 <feMergeNode in="b" />
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
-            <radialGradient id="brFill" cx="42%" cy="40%" r="75%">
-              <stop offset="0%" stopColor="#7df3fb" stopOpacity="0.95" />
-              <stop offset="55%" stopColor="#13c6d8" stopOpacity="0.9" />
+            <filter id="hudGlowSoft" x="-120%" y="-120%" width="340%" height="340%">
+              <feGaussianBlur stdDeviation="14" />
+            </filter>
+            <radialGradient id="brFill" cx="42%" cy="38%" r="78%">
+              <stop offset="0%" stopColor="#a9f7ff" stopOpacity="1" />
+              <stop offset="50%" stopColor="#1ad0e2" stopOpacity="0.92" />
               <stop offset="100%" stopColor="#067a8a" stopOpacity="0.85" />
             </radialGradient>
             <clipPath id="brClip">
@@ -54,26 +72,32 @@ export function MapaBrasil({ locais, label }: { locais: LocalMapa[]; label: stri
             </clipPath>
           </defs>
 
-          {/* Anéis orbitais (HUD) */}
-          <g fill="none" className="stroke-ia/25">
-            <circle cx={C} cy={C} r={262} strokeDasharray="2 7" strokeWidth={1} />
-            <ellipse cx={C} cy={C} rx={250} ry={92} strokeWidth={1.2} transform={`rotate(-22 ${C} ${C})`} />
-            <ellipse cx={C} cy={C} rx={250} ry={92} strokeWidth={1} strokeDasharray="3 8" transform={`rotate(20 ${C} ${C})`} />
+          {/* Anéis orbitais girando (sentidos opostos) */}
+          <g fill="none" className="stroke-ia/35">
+            <circle cx={C} cy={C} r={266} strokeDasharray="2 8" strokeWidth={1.2} />
+            <ellipse cx={C} cy={C} rx={255} ry={94} strokeWidth={1.4} transform={`rotate(-22 ${C} ${C})`} />
+            {rot(`0 ${C} ${C}`, `360 ${C} ${C}`, "46s")}
           </g>
-          {/* marcações de "scanner" no anel */}
-          <g className="stroke-ia/40" strokeWidth={2}>
-            <line x1={C} y1={32} x2={C} y2={48} />
-            <line x1={C} y1={VB - 48} x2={C} y2={VB - 32} />
-            <line x1={38} y1={C} x2={54} y2={C} />
-            <line x1={VB - 54} y1={C} x2={VB - 38} y2={C} />
+          <g fill="none" className="stroke-ia/25">
+            <ellipse cx={C} cy={C} rx={255} ry={94} strokeWidth={1.1} strokeDasharray="4 9" transform={`rotate(24 ${C} ${C})`} />
+            {rot(`360 ${C} ${C}`, `0 ${C} ${C}`, "32s")}
+          </g>
+          {/* marcações de scanner no anel externo (giro lento) */}
+          <g className="stroke-ia/50" strokeWidth={2.5}>
+            <line x1={C} y1={26} x2={C} y2={50} />
+            <line x1={C} y1={VB - 50} x2={C} y2={VB - 26} />
+            <line x1={32} y1={C} x2={56} y2={C} />
+            <line x1={VB - 56} y1={C} x2={VB - 32} y2={C} />
+            {rot(`0 ${C} ${C}`, `360 ${C} ${C}`, "60s")}
           </g>
 
-          {/* halo da silhueta */}
-          <path d={OUTLINE} fill="none" className="stroke-ia/40" strokeWidth={7} filter="url(#hudGlow)" />
+          {/* halo difuso + halo de traço (glow intenso) */}
+          <path d={OUTLINE} className="fill-ia/40" filter="url(#hudGlowSoft)" />
+          <path d={OUTLINE} fill="none" className="stroke-ia/60" strokeWidth={9} filter="url(#hudGlow)" />
           {/* silhueta preenchida */}
-          <path d={OUTLINE} fill="url(#brFill)" className="stroke-ia" strokeWidth={1.6} filter="url(#hudGlow)" />
+          <path d={OUTLINE} fill="url(#brFill)" className="stroke-ia" strokeWidth={1.8} filter="url(#hudGlow)" />
           {/* grade wireframe dentro do Brasil */}
-          <g clipPath="url(#brClip)" stroke="#04121d" strokeOpacity={0.45} strokeWidth={1}>
+          <g clipPath="url(#brClip)" stroke="#03101a" strokeOpacity={0.45} strokeWidth={1}>
             {linhas.map((v) => (
               <line key={`h${v}`} x1={0} y1={v} x2={VB} y2={v} />
             ))}
@@ -82,22 +106,28 @@ export function MapaBrasil({ locais, label }: { locais: LocalMapa[]; label: stri
             ))}
           </g>
 
-          {/* Pontos pulsantes luminosos */}
+          {/* Pontos pulsantes luminosos (duplo pulso) */}
           {locais.map((l) => {
             const r = 4.5 + Math.min(3.5, (l.empresas - 1) * 0.8);
             return (
-              <g key={l.id} transform={`translate(${l.x.toFixed(1)},${l.y.toFixed(1)})`}>
+              <g
+                key={l.id}
+                transform={`translate(${l.x.toFixed(1)},${l.y.toFixed(1)})`}
+                aria-label={`${l.nome}/${l.uf} · ${l.empresas} empresa(s)`}
+              >
                 <circle
-                  r={r + 3}
-                  className="fill-ia/50 animate-ping"
+                  r={r + 6}
+                  className="fill-ia/40 animate-ping"
                   style={{ transformBox: "fill-box", transformOrigin: "center" }}
                 />
-                <circle r={r + 2.5} className="fill-ia/25" filter="url(#hudGlow)" />
-                <circle r={r} className="fill-[#aef6ff]" />
-                <circle r={r} fill="none" className="stroke-white" strokeWidth={1} />
-                <title>
-                  {l.nome}/{l.uf} · {l.empresas} empresa(s)
-                </title>
+                <circle
+                  r={r + 3}
+                  className="fill-ia/40 animate-ping [animation-delay:0.7s]"
+                  style={{ transformBox: "fill-box", transformOrigin: "center" }}
+                />
+                <circle r={r + 4} className="fill-ia/40" filter="url(#hudGlow)" />
+                <circle r={r} className="fill-[#cffbff]" />
+                <circle r={r} fill="none" className="stroke-white" strokeWidth={1.2} />
               </g>
             );
           })}

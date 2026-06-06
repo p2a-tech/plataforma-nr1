@@ -98,7 +98,7 @@ export default async function DashboardPage() {
           {/* Só Diretoria/Admin: Global → globo girando; empresa → mapa do Brasil c/ pontos */}
           {mapaLocais &&
             (escopo.modo === "global" ? (
-              <GloboHud label={escopoTxt} cidades={mapaLocais.length} />
+              <GloboHud />
             ) : (
               <MapaBrasil locais={mapaLocais} label={escopoTxt} />
             ))}

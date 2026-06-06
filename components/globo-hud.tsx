@@ -1,5 +1,4 @@
-import { Globe2 } from "lucide-react";
-import { Card, CardTitle, Badge } from "@/components/ui/primitives";
+import { Card } from "@/components/ui/primitives";
 
 /**
  * Globo terrestre girando em estilo HUD/holográfico (Diretoria).
@@ -8,17 +7,9 @@ import { Card, CardTitle, Badge } from "@/components/ui/primitives";
  */
 const CIANO = "sepia(1) hue-rotate(150deg) saturate(4.5) brightness(0.82) contrast(1.18)";
 
-export function GloboHud({ label, cidades }: { label: string; cidades: number }) {
+export function GloboHud() {
   return (
     <Card className="overflow-hidden">
-      <CardTitle
-        icon={<Globe2 className="h-5 w-5" />}
-        hint={`Cobertura — ${label}`}
-        action={<Badge tone="ia">{cidades} cidades</Badge>}
-      >
-        Operação · Grupo GPS
-      </CardTitle>
-
       <div className="relative grid place-items-center overflow-hidden rounded-2xl bg-[#03101a] py-10 ring-1 ring-inset ring-ia/15">
         {/* brilho radial + grade pontilhada */}
         <div className="pointer-events-none absolute inset-0 animate-pulse bg-[radial-gradient(circle_at_50%_50%,rgba(0,194,209,0.22),transparent_60%)]" />

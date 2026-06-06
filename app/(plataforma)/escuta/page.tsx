@@ -217,32 +217,50 @@ function AnonimatoBanner() {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Paleta do app GPS Você (mockup): azul corporativo, corpo claro, toques verde/laranja */
+const GPS = {
+  azul: "#3a6ea5",
+  azulEscuro: "#2b577f",
+  corpo: "#eef2f7",
+  verde: "#1d4d3f",
+  laranja: "#f5a623",
+};
+
 function PhoneFrame({ conversa }: { conversa: BalaoChat[] }) {
   return (
-    <div className="mx-auto w-full max-w-[380px] rounded-[2.5rem] border border-line/10 bg-navy-deep p-2.5 shadow-2xl shadow-black/40">
-      <div className="overflow-hidden rounded-[2rem] border border-line/5 bg-navy">
-        <div className="flex items-center gap-3 border-b border-line/5 bg-navy-panel px-4 py-3">
-          <div className="relative flex h-9 w-9 items-center justify-center rounded-full bg-ia/15 text-ia ring-1 ring-inset ring-ia/25">
-            <Heart className="h-5 w-5" />
+    <div className="mx-auto w-full max-w-[380px] rounded-[2.5rem] border border-black/10 bg-[#1f2733] p-2.5 shadow-2xl shadow-black/40">
+      <div className="overflow-hidden rounded-[2rem] bg-[#eef2f7]">
+        {/* Header GPS Você */}
+        <div className="flex items-center gap-3 px-4 py-3 text-white" style={{ backgroundColor: GPS.azul }}>
+          <div className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white/20 ring-1 ring-inset ring-white/30">
+            <Heart className="h-5 w-5 text-white" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-semibold text-ink">PrevIA · Cuidado</div>
-            <div className="flex items-center gap-1.5 text-[11px] text-ok">
-              <span className="h-1.5 w-1.5 rounded-full bg-ok animate-pulseDot" />
+            <div className="text-sm font-semibold">
+              GPS<span className="font-normal italic">Você</span> · Cuidado
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] text-white/85">
+              <span className="h-1.5 w-1.5 rounded-full animate-pulseDot" style={{ backgroundColor: GPS.laranja }} />
               online · responde em 30s
             </div>
           </div>
-          <ShieldCheck className="h-4 w-4 text-ink-muted" />
+          <ShieldCheck className="h-4 w-4 text-white/85" />
         </div>
-        <div className="flex max-h-[560px] flex-col gap-2.5 overflow-y-auto bg-navy-deep/40 px-3 py-4">
+        {/* Corpo claro */}
+        <div className="flex max-h-[560px] flex-col gap-2.5 overflow-y-auto px-3 py-4" style={{ backgroundColor: GPS.corpo }}>
           {conversa.map((b, i) => (
             <ChatBubble key={i} balao={b} index={i} />
           ))}
           <ConviteAcolhimento />
         </div>
-        <div className="flex items-center gap-2 border-t border-line/5 bg-navy-panel px-3 py-2.5">
-          <div className="flex-1 rounded-full bg-fill/5 px-4 py-2 text-xs text-ink-muted">Digite uma mensagem…</div>
-          <button className="flex h-9 w-9 items-center justify-center rounded-full bg-ia text-onaccent" aria-label="Enviar">
+        {/* Barra de input */}
+        <div className="flex items-center gap-2 border-t border-black/5 bg-white px-3 py-2.5">
+          <div className="flex-1 rounded-full bg-[#eef2f7] px-4 py-2 text-xs text-slate-400">Digite uma mensagem…</div>
+          <button
+            className="flex h-9 w-9 items-center justify-center rounded-full text-white"
+            style={{ backgroundColor: GPS.azul }}
+            aria-label="Enviar"
+          >
             <MessageCircle className="h-4 w-4" />
           </button>
         </div>
@@ -263,22 +281,27 @@ function ChatBubble({ balao, index }: { balao: BalaoChat; index: number }) {
           className={cn(
             "rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed shadow-sm",
             isBot
-              ? "rounded-tl-sm bg-navy-panel text-ink ring-1 ring-inset ring-line/5"
-              : "rounded-tr-sm bg-emerald-700/80 text-white",
+              ? "rounded-tl-sm bg-white text-slate-700 ring-1 ring-inset ring-black/5"
+              : "rounded-tr-sm text-white",
           )}
+          style={isBot ? undefined : { backgroundColor: GPS.azul }}
         >
           {balao.texto}
         </div>
         {isBot && balao.opcoes && (
           <div className="mt-1.5 flex flex-wrap gap-1.5">
             {balao.opcoes.map((op) => (
-              <span key={op} className="rounded-full border border-ia/25 bg-ia/[0.08] px-2.5 py-1 text-[11px] font-medium text-ia">
+              <span
+                key={op}
+                className="rounded-full px-2.5 py-1 text-[11px] font-medium"
+                style={{ backgroundColor: "#3a6ea51a", color: GPS.azulEscuro, boxShadow: `inset 0 0 0 1px ${GPS.azul}40` }}
+              >
                 {op}
               </span>
             ))}
           </div>
         )}
-        <span className="mt-1 px-1 text-[10px] text-ink-muted">{balao.hora}</span>
+        <span className="mt-1 px-1 text-[10px] text-slate-400">{balao.hora}</span>
       </div>
     </div>
   );
@@ -287,9 +310,12 @@ function ChatBubble({ balao, index }: { balao: BalaoChat; index: number }) {
 function ConviteAcolhimento() {
   return (
     <div className="mt-1 flex animate-fade-up justify-start" style={{ animationDelay: "540ms" }}>
-      <div className="flex w-full items-center gap-2.5 rounded-2xl border border-humano/25 bg-humano/[0.08] px-3.5 py-2.5">
-        <HeartHandshake className="h-5 w-5 shrink-0 text-humano" />
-        <span className="text-[11px] leading-relaxed text-humano-soft">
+      <div
+        className="flex w-full items-center gap-2.5 rounded-2xl px-3.5 py-2.5"
+        style={{ backgroundColor: `${GPS.verde}14`, boxShadow: `inset 0 0 0 1px ${GPS.verde}3a` }}
+      >
+        <HeartHandshake className="h-5 w-5 shrink-0" style={{ color: GPS.verde }} />
+        <span className="text-[11px] font-medium leading-relaxed" style={{ color: GPS.verde }}>
           Encaminhado em sigilo à clínica parceira · cuidado humano
         </span>
       </div>

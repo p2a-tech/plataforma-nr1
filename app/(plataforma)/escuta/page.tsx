@@ -30,8 +30,8 @@ export const dynamic = "force-dynamic";
 
 export default async function EscutaPage() {
   const sessao = exigirSessao(["sst", "admin", "diretoria"]);
-  const [resumo, canaisQ, semana, porSetor, ofensores] = await withEmpresa(
-    sessao.empresa_id,
+  const [resumo, canaisQ, semana, porSetor, ofensores] = await withEscopo(
+    sessao,
     () =>
       Promise.all([
         getRadarResumo(),

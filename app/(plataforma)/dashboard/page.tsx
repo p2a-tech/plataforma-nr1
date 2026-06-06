@@ -39,8 +39,8 @@ function tempoDesde(iso: string | null): string {
 
 export default async function DashboardPage() {
   const sessao = exigirSessao(["sst", "admin", "diretoria"]); // gate na página + escopo de empresa
-  const [heat, alert, serie, resumo, pgr, metrics] = await withEmpresa(
-    sessao.empresa_id,
+  const [heat, alert, serie, resumo, pgr, metrics] = await withEscopo(
+    sessao,
     () =>
       Promise.all([
         getHeatmap(),

@@ -18,6 +18,8 @@ import { Heatmap } from "@/components/heatmap";
 import { corSeveridade } from "@/lib/mock-data";
 import { exigirSessao } from "@/lib/auth";
 import { withEscopo, resolverEscopo } from "@/lib/escopo";
+import { getEmpresasRiscoAlto } from "@/lib/grupo-risco";
+import { RiscoGrupo } from "@/components/risco-grupo";
 import {
   getHeatmap,
   getAlertas,
@@ -55,6 +57,8 @@ export default async function DashboardPage() {
   const dadosReais = metrics.fonte === "real";
   const escopo = await resolverEscopo(sessao);
   const escopoTxt = escopo.segmento ? `${escopo.label} · ${escopo.segmento}` : escopo.label;
+  // Consolidado do grupo: empresas em risco alto (só na visão Global da Diretoria).
+  const riscoGrupo = escopo.modo === "global" ? await getEmpresasRiscoAlto() : null;
 
   return (
     <div className="space-y-6">
@@ -263,6 +267,9 @@ export default async function DashboardPage() {
           </div>
         </>
       )}
+
+      {/* Consolidado do grupo — só na visão Global da Diretoria */}
+      {riscoGrupo && <RiscoGrupo data={riscoGrupo} />}
     </div>
   );
 }

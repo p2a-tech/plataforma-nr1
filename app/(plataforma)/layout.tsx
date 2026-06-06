@@ -22,10 +22,6 @@ export default async function PlataformaLayout({
   if (sessao.papel === "clinica" && isRotaSST(pathname)) {
     redirect(homePorPapel(sessao.papel));
   }
-  // RBAC: a Visão Diretoria (consolidado do grupo) é restrita a diretoria|admin.
-  if (pathname.startsWith("/diretoria") && sessao.papel !== "diretoria" && sessao.papel !== "admin") {
-    redirect(homePorPapel(sessao.papel));
-  }
   // E5 multi-tenancy: estabelece o escopo para as queries server-side.
   // Vidas monitoradas = alcance real do Radar (convidados).
   const radar = await withEscopo(sessao, () => getRadarResumo());

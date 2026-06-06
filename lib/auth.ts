@@ -86,7 +86,7 @@ export function exigirSessao(papeis?: Papel[]): Sessao {
 export function homePorPapel(papel: Papel): string {
   if (papel === "clinica") return "/atendimento";
   if (papel === "admin") return "/admin";
-  if (papel === "diretoria") return "/diretoria";
+  // Diretoria entra direto no Dashboard (consolidado por padrão; filtra por empresa).
   return "/dashboard";
 }
 

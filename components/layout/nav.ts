@@ -9,7 +9,6 @@ import {
   BadgeCheck,
   ShieldCheck,
   Scale,
-  Building2,
   type LucideIcon,
 } from "lucide-react";
 import type { Papel } from "@/lib/auth";
@@ -26,7 +25,6 @@ export interface NavItem {
 }
 
 export const navItems: NavItem[] = [
-  { href: "/diretoria", label: "Visão Diretoria", icon: Building2, ator: "ia", descricao: "Consolidado do grupo", papeis: ["diretoria", "admin"] },
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, ator: "ia", descricao: "Visão SST / compliance" },
   { href: "/escuta", label: "Escuta Ativa", icon: RadioTower, ator: "ia", descricao: "Radar IA · micro-pulsos" },
   { href: "/riscos", label: "Inventário de Riscos", icon: ClipboardList, ator: "ia", descricao: "PGR vivo" },

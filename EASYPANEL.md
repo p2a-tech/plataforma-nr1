@@ -77,24 +77,27 @@ preciso aplicar o schema/seed/migrations. Como `scripts/` e `db/` ficam fora da
 imagem do app (`.dockerignore`), aplique a partir de uma **máquina com o repo
 clonado**, apontando para o banco do Easypanel.
 
-**Opção A — recomendada: replicar o ambiente (schema + seed + migrations + dados do Grupo GPS).**
+**Opção A — recomendada: o script único `scripts/deploy-seed.sh`.**
 
-Exponha o `db` temporariamente (serviço `db` → **Expose** uma porta, ex.: 5432)
-ou use um túnel. Com `DATABASE_URL` apontando para o banco do Easypanel:
+Aplica schema + seed + migrations + dados do Grupo GPS (17 empresas, 180k
+colaboradores, ~147k respostas) de uma vez. Exponha o `db` temporariamente
+(serviço `db` → **Expose** uma porta) ou use um túnel, clone o repo, e rode:
 
 ```bash
-# 1) schema + seed (cria tabelas e os 3 usuários demo: senha previa123)
-for f in db/init/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"; done
-# 2) migrations (multitenancy + RLS)
-node scripts/migrate.mjs
-# 3) Grupo GPS: 17 empresas, 180k colaboradores, ~147k respostas, segmentos
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seed-grupo-gps.sql
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seed-diretoria-user.sql
-# 4) micro-pulsos recentes (destrava o "tempo real" do dashboard)
-node scripts/simular-pulsos.mjs 60 --url https://SEU_DOMINIO
+# Linux / macOS / Git Bash
+DATABASE_URL='postgres://USER:PWD@HOST:PORT/DB' bash scripts/deploy-seed.sh
+# opcional: gerar micro-pulsos recentes do piloto (Translog) via API:
+DATABASE_URL='...' bash scripts/deploy-seed.sh https://SEU_DOMINIO
 ```
 
-> Depois, **remova a exposição** da porta do `db` (deixe só na rede interna).
+```powershell
+# Windows (PowerShell)
+$env:DATABASE_URL='postgres://USER:PWD@HOST:PORT/DB'
+powershell -ExecutionPolicy Bypass -File scripts\deploy-seed.ps1   # -AppUrl https://SEU_DOMINIO (opcional)
+```
+
+> Requer `psql` e `node` na máquina. Roda contra um banco **vazio** (caso do
+> Easypanel). Depois, **remova a exposição** da porta do `db`.
 
 **Opção B — clonar o banco local exato (pg_dump → restore):**
 

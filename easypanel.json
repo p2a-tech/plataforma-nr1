@@ -1,0 +1,41 @@
+{
+  "$comment": "Template Easypanel (GPSPrevIA) - Postgres + App (branch grupo-gps). Importe em 'Create from Template > Schema'. Ajuste senha, DATABASE_URL e segredos depois. Veja EASYPANEL.md.",
+  "services": [
+    {
+      "type": "postgres",
+      "data": {
+        "serviceName": "db",
+        "image": "postgres:16",
+        "password": "TROQUE_por_uma_senha_forte"
+      }
+    },
+    {
+      "type": "app",
+      "data": {
+        "serviceName": "app",
+        "source": {
+          "type": "github",
+          "owner": "p2a-tech",
+          "repo": "plataforma-nr1",
+          "ref": "grupo-gps",
+          "path": "/"
+        },
+        "build": {
+          "type": "dockerfile",
+          "file": "Dockerfile"
+        },
+        "env": "DATABASE_URL=postgres://postgres:TROQUE_por_uma_senha_forte@$(PROJECT_NAME)_db:5432/$(PROJECT_NAME)\nPGSSL=disable\nNODE_ENV=production\nAUTH_SECRET=GERE_openssl_rand_hex_32\nPGR_SECRET=GERE_openssl_rand_hex_32\nCLINIC_SECRETS_JSON={\"clin_translog_demo\":\"GERE_um_segredo\"}",
+        "domains": [
+          {
+            "host": "$(EASYPANEL_DOMAIN)",
+            "https": true,
+            "port": 3000
+          }
+        ],
+        "deploy": {
+          "replicas": 1
+        }
+      }
+    }
+  ]
+}

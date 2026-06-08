@@ -9,10 +9,22 @@ O app só precisa, no mínimo, de `DATABASE_URL` e `AUTH_SECRET`.
 
 ---
 
-## 1. Conectar o GitHub
+## 1. Conectar o GitHub (repo privado → precisa de token)
 
-Em **Settings → GitHub**, instale o GitHub App do Easypanel e dê acesso ao
-repositório `p2a-tech/plataforma-nr1` (privado).
+O `p2a-tech/plataforma-nr1` é **privado**, então o Easypanel precisa de um
+**GitHub Token** (senão dá `Cannot find public repository ... token is missing`).
+
+1. Crie um **Personal Access Token** no GitHub com leitura do repo:
+   - *Classic:* GitHub → Settings → Developer settings → **Tokens (classic)** →
+     Generate → escopo **`repo`**.
+   - *ou Fine-grained:* owner `p2a-tech`, repo `plataforma-nr1`, permissões
+     **Contents: Read** + **Metadata: Read** (pode exigir aprovação do admin da org).
+2. No Easypanel: **Settings → GitHub** → cole o token e salve.
+3. Na **Fonte → Github** do App preencha:
+   - **Proprietário:** `p2a-tech`
+   - **Repositório:** `plataforma-nr1`  ⟵ **sem `.git`**
+   - **Ramo:** `grupo-gps`
+   - **Caminho de Build:** `/`
 
 ## 2. Criar o projeto e o Postgres
 

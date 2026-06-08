@@ -50,11 +50,13 @@ COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=build --chown=nextjs:nodejs /app/public ./public
 
 USER nextjs
+# Porta padrão (PaaS como Easypanel/Render injetam PORT em runtime e o
+# server.js do standalone respeita). EXPOSE é informativo.
 EXPOSE 3000
 
-# Healthcheck bate na rota /api/health (servida pelo próprio app).
-# Usa a porta real ($PORT) — plataformas como Easypanel injetam PORT=80.
-HEALTHCHECK --interval=30s --timeout=5s --start-period=25s --retries=3 \
-  CMD node -e "const p=process.env.PORT||3000;fetch('http://127.0.0.1:'+p+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+# Sem HEALTHCHECK no Dockerfile: a plataforma (Easypanel) gerencia a saúde do
+# serviço sondando a porta do app. Um HEALTHCHECK fixo aqui causava o container
+# ser marcado "unhealthy" (porta divergente) e o proxy retornar "not reachable".
+# Para self-hosted via docker-compose, o compose define seu próprio healthcheck.
 
 CMD ["node", "server.js"]

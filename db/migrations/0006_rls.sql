@@ -152,7 +152,7 @@ begin
     create role previa_auth login password 'previa_auth_pwd' nosuperuser bypassrls;
     -- bypassrls está intencional aqui: só LE usuarios para autenticar. Em prod,
     -- pode-se restringir mais via grants/views. Por hora, segurança pragmática.
-    grant connect on database previa to previa_auth;
+    execute format('grant connect on database %I to previa_auth', current_database());
     grant usage on schema public to previa_auth;
     grant select on public.usuarios, public.empresas, public.clinicas to previa_auth;
   end if;

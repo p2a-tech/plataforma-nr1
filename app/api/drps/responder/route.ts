@@ -20,7 +20,7 @@ import { z } from "zod";
 import { dbHabilitado } from "@/lib/db";
 import {
   NovaRespostaDRPS,
-  resolverEmpresaPorToken,
+  resolverCampanhaPorToken,
   registrarResposta,
   carregarInstrumentoComPerguntas,
   carregarTemplateOkebambo,
@@ -79,18 +79,20 @@ export async function POST(req: NextRequest) {
   }
   const { token, instrumento_id, payload } = parsed.data;
 
-  // 1) Resolve empresa pelo token (determinístico ou demo-).
-  const empresaId = await resolverEmpresaPorToken(token);
-  if (!empresaId) {
+  // 1) Resolve campanha + empresa pelo token (Onda 5: drps_campanha.token).
+  const camp = await resolverCampanhaPorToken(token);
+  if (!camp) {
     return NextResponse.json(
       { erro: "token_invalido" },
       { status: 401 },
     );
   }
+  const { empresa_id: empresaId, campanha_id, instrumento_id: camp_inst_id } = camp;
 
-  // 2) Carrega instrumento — explícito ou template Okêbambo global.
-  const instrumentoCarregado = instrumento_id
-    ? await carregarInstrumentoComPerguntas(instrumento_id)
+  // 2) Carrega instrumento — preferência: o do client > o da campanha > template global.
+  const instId = instrumento_id ?? camp_inst_id ?? null;
+  const instrumentoCarregado = instId
+    ? await carregarInstrumentoComPerguntas(instId)
     : await carregarTemplateOkebambo();
 
   if (!instrumentoCarregado) {
@@ -112,9 +114,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 3) Registra
+  // 3) Registra (com campanha_id resolvido pelo token).
   try {
-    const resposta = await registrarResposta(empresaId, instrumento.id, payload);
+    const resposta = await registrarResposta(
+      empresaId,
+      instrumento.id,
+      payload,
+      campanha_id,
+    );
     return NextResponse.json({ id: resposta.id, ok: true }, { status: 201 });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

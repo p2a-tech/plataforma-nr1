@@ -1,4 +1,4 @@
-import { ClipboardList, Link2, Smartphone, BarChart3 } from "lucide-react";
+import { ClipboardList, Link2, Smartphone, BarChart3, Megaphone } from "lucide-react";
 import { Card, CardTitle, PageHeader, Badge } from "@/components/ui/primitives";
 import { exigirSessao } from "@/lib/auth";
 import {
@@ -8,7 +8,9 @@ import {
   adesaoPorSetor,
   tokenDeCampanha,
 } from "@/lib/drps";
+import { listarCampanhas } from "@/lib/drps-campanha";
 import { CopyLinkButton } from "./copy-link";
+import { NovaCampanhaButton } from "@/components/escuta/nova-campanha";
 
 export const dynamic = "force-dynamic";
 
@@ -17,14 +19,18 @@ export default async function DrpsPage() {
   const sessao = exigirSessao(["sst", "admin"]);
   const empresaId = sessao.empresa_id;
 
-  const [instrumentos, resumo, porSetor, recentes] = await Promise.all([
+  const [instrumentos, resumo, porSetor, recentes, campanhas] = await Promise.all([
     listarInstrumentosAtivos(empresaId),
     resumoAdesao(empresaId),
     adesaoPorSetor(empresaId),
     listarRespostas(empresaId, { limit: 20 }),
+    listarCampanhas(empresaId),
   ]);
 
-  const token = tokenDeCampanha(empresaId);
+  // Legado · token determinístico HMAC (Onda 4) — usado só como fallback de
+  // exibição quando a empresa AINDA não criou nenhuma campanha. Quem clica
+  // "Nova campanha" agora gera token persistente em drps_campanha.
+  const tokenLegado = tokenDeCampanha(empresaId);
 
   return (
     <div className="space-y-6">
@@ -62,7 +68,7 @@ export default async function DrpsPage() {
           <div className="grid gap-3 sm:grid-cols-2">
             {instrumentos.map((i) => {
               const isGlobal = i.empresa_id === null;
-              const link = `/r/drps/${token}`;
+              const link = `/r/drps/${tokenLegado}`;
               return (
                 <div
                   key={i.id}
@@ -81,6 +87,66 @@ export default async function DrpsPage() {
                       {i.descricao}
                     </p>
                   )}
+                  <div className="mt-3 flex items-center gap-2">
+                    <CopyLinkButton path={link} />
+                    <code className="truncate rounded-md bg-fill/10 px-2 py-1 text-[11px] text-ink-muted">
+                      {link}
+                    </code>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+
+      {/* ── Campanhas DRPS (Onda 5 · §8) ── */}
+      <Card>
+        <CardTitle
+          icon={<Megaphone className="h-5 w-5" />}
+          hint="Tokens persistentes — substituem o link único legado. Cada campanha tem ciclo próprio (q1-2026, h1-2026…) usado pelo histórico."
+          action={<NovaCampanhaButton />}
+        >
+          Campanhas DRPS
+        </CardTitle>
+
+        {campanhas.length === 0 ? (
+          <p className="py-6 text-center text-sm text-ink-muted">
+            Nenhuma campanha criada. Use <strong>Nova campanha</strong> para
+            gerar um link público com identificação de ciclo (necessário para
+            comparativos históricos).
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {campanhas.map((c) => {
+              const link = `/r/drps/${c.token}`;
+              const expirada =
+                c.expira_em && new Date(c.expira_em).getTime() < Date.now();
+              const tone = !c.ativo || expirada ? "neutro" : "ia";
+              return (
+                <div
+                  key={c.id}
+                  className="rounded-xl border border-line/10 bg-fill/5 p-4"
+                >
+                  <div className="mb-1 flex items-center gap-2">
+                    <span className="text-sm font-semibold text-ink">
+                      {c.titulo}
+                    </span>
+                    <Badge tone={tone}>ciclo: {c.ciclo}</Badge>
+                    {!c.ativo && <Badge tone="neutro">inativa</Badge>}
+                    {expirada && c.ativo && <Badge tone="ambar">expirada</Badge>}
+                  </div>
+                  <div className="mt-1 text-xs text-ink-muted">
+                    Código <code className="text-ink/85">{c.codigo}</code> ·{" "}
+                    {c.n_respostas} resposta{c.n_respostas === 1 ? "" : "s"}
+                    {c.expira_em && (
+                      <>
+                        {" "}
+                        · expira em{" "}
+                        {new Date(c.expira_em).toLocaleDateString("pt-BR")}
+                      </>
+                    )}
+                  </div>
                   <div className="mt-3 flex items-center gap-2">
                     <CopyLinkButton path={link} />
                     <code className="truncate rounded-md bg-fill/10 px-2 py-1 text-[11px] text-ink-muted">

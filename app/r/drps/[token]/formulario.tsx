@@ -1,8 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import type { Pergunta, TipoPergunta } from "@/lib/drps";
+
+/**
+ * Tipo da sugestão de cargo retornada por GET /api/catalogo/papeis
+ * (definido localmente para evitar importar `server-only` no client).
+ */
+interface SugestaoCargo {
+  id: string;
+  nome: string;
+  area: string;
+  conselho_profissional?: string;
+}
 
 /**
  * Formulário público mobile-first do DRPS.
@@ -318,6 +329,18 @@ function DemografiaCampo({
       </select>
     );
   }
+
+  // Q2 (função/cargo) usa autocomplete com /api/catalogo/papeis. Demais
+  // demografias sem opções caem em <input> simples.
+  if (pergunta.codigo === "Q2") {
+    return (
+      <AutocompletePapel
+        valor={valor.valor_texto ?? ""}
+        onChange={(v) => onChange({ valor_texto: v })}
+      />
+    );
+  }
+
   return (
     <input
       type="text"
@@ -326,6 +349,109 @@ function DemografiaCampo({
       value={valor.valor_texto ?? ""}
       onChange={(e) => onChange({ valor_texto: e.target.value })}
     />
+  );
+}
+
+/**
+ * Autocomplete da Q2 (cargo). Chama GET /api/catalogo/papeis?q=... com debounce
+ * curto. Mantém "Outro" como fallback (texto livre) — o usuário pode digitar
+ * livremente sem precisar selecionar nenhuma sugestão.
+ */
+function AutocompletePapel({
+  valor,
+  onChange,
+}: {
+  valor: string;
+  onChange: (v: string) => void;
+}) {
+  const [sugestoes, setSugestoes] = useState<SugestaoCargo[]>([]);
+  const [aberto, setAberto] = useState(false);
+  const [foco, setFoco] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const debounceRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!foco) return;
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(async () => {
+      try {
+        const url =
+          "/api/catalogo/papeis" +
+          (valor ? `?q=${encodeURIComponent(valor)}` : "");
+        const r = await fetch(url);
+        if (!r.ok) return;
+        const data = (await r.json()) as { cargos: SugestaoCargo[] };
+        setSugestoes(data.cargos ?? []);
+        setAberto(true);
+      } catch {
+        // Falha de rede — silencioso; user mantém texto livre.
+      }
+    }, 180);
+    return () => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    };
+  }, [valor, foco]);
+
+  // Fecha o dropdown ao clicar fora.
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
+        setAberto(false);
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={containerRef} className="relative">
+      <input
+        type="text"
+        className="block w-full rounded-md border border-line/10 bg-navy-panel px-3 py-2 text-sm text-ink placeholder:text-ink-muted/70"
+        placeholder="Ex.: Psicologia, Atendente, Outro…"
+        value={valor}
+        onFocus={() => setFoco(true)}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setAberto(true);
+        }}
+        autoComplete="off"
+      />
+      {aberto && sugestoes.length > 0 && (
+        <ul
+          role="listbox"
+          className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-md border border-line/10 bg-navy-panel shadow-lg shadow-black/30"
+        >
+          {sugestoes.map((s) => (
+            <li
+              key={s.id}
+              role="option"
+              aria-selected={s.nome === valor}
+              className="cursor-pointer px-3 py-2 text-sm text-ink hover:bg-fill/10"
+              onMouseDown={(e) => {
+                // mousedown (em vez de click) para não perder foco antes.
+                e.preventDefault();
+                onChange(s.nome);
+                setAberto(false);
+              }}
+            >
+              <span>{s.nome}</span>
+              {s.conselho_profissional && (
+                <span className="ml-2 text-[11px] text-ink-muted">
+                  · {s.conselho_profissional}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="mt-1 text-[11px] text-ink-muted">
+        Use a lista ou digite seu cargo (incluindo &quot;Outro&quot;).
+      </p>
+    </div>
   );
 }
 

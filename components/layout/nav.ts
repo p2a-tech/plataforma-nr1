@@ -8,9 +8,12 @@ import {
   HeartPulse,
   FileAudio,
   BadgeCheck,
+  History,
   ShieldCheck,
   Scale,
   Inbox,
+  BarChart3,
+  Upload,
   type LucideIcon,
 } from "lucide-react";
 
@@ -28,6 +31,9 @@ export const navItems: NavItem[] = [
   { href: "/escuta", label: "Escuta Ativa", icon: RadioTower, ator: "ia", descricao: "Radar IA · micro-pulsos" },
   { href: "/escuta/risco-grave", label: "Risco grave/iminente", icon: AlertOctagon, ator: "humano", descricao: "Protocolo NR-1 · emergência" },
   { href: "/escuta/drps", label: "DRPS · Questionário", icon: ClipboardList, ator: "ia", descricao: "Diagnóstico psicossocial NR-1" },
+  { href: "/escuta/analise", label: "DRPS · Análise", icon: BarChart3, ator: "ia", descricao: "DRPS · análise setorizada e por contrato" },
+  { href: "/escuta/historico", label: "DRPS · Histórico", icon: History, ator: "ia", descricao: "Evolução das dimensões NR-1 ao longo dos ciclos" },
+  { href: "/escuta/importar", label: "DRPS · Importar", icon: Upload, ator: "ia", descricao: "Importar respostas de Google Forms" },
   { href: "/riscos", label: "Inventário de Riscos", icon: ClipboardList, ator: "ia", descricao: "PGR vivo" },
   { href: "/pgr", label: "PGR · Assinatura", icon: FileSignature, ator: "ia", descricao: "Validação humana assinada" },
   { href: "/fluxo", label: "Fluxo Human-in-the-Loop", icon: Workflow, ator: "ia", descricao: "Como a parceria opera" },

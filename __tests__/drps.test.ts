@@ -142,23 +142,39 @@ describe.skipIf(!URL_ADMIN)("drps · isolamento por empresa + instrumentos", () 
     expect(respA2).toHaveLength(2); // ainda 2
   });
 
-  it("token determinístico bate consigo mesmo e diferencia empresas", async () => {
+  it("token determinístico (legado) é utilitário; lookup público vai por drps_campanha", async () => {
+    // Onda 5 (Dev B · §8) substituiu o lookup HMAC O(n) por drps_campanha.
+    // `tokenDeCampanha` continua exportado como utilitário legado (alguns
+    // scripts dependem da derivação), mas `resolverEmpresaPorToken` SÓ resolve
+    // tokens persistidos. Tokens HMAC isolados → null (fail-closed).
     const { tokenDeCampanha, resolverEmpresaPorToken } = await import("@/lib/drps");
     const tA = tokenDeCampanha(EMP_A);
     const tB = tokenDeCampanha(EMP_B);
     expect(tA).not.toBe(tB);
 
-    const empA = await resolverEmpresaPorToken(tA);
-    const empB = await resolverEmpresaPorToken(tB);
-    expect(empA).toBe(EMP_A);
-    expect(empB).toBe(EMP_B);
+    // HMAC isolado NÃO bate com nenhuma campanha persistida → null.
+    expect(await resolverEmpresaPorToken(tA)).toBeNull();
+    expect(await resolverEmpresaPorToken(tB)).toBeNull();
 
-    // Atalho demo
+    // Atalho demo (gated por NODE_ENV) continua aceito.
     const demo = await resolverEmpresaPorToken(`demo-token-${EMP_A}`);
     expect(demo).toBe(EMP_A);
 
     // Token desconhecido
     const lixo = await resolverEmpresaPorToken("xxxxxxxxxxxxxxxxxxxxxxxx");
     expect(lixo).toBeNull();
+
+    // Cria uma campanha e valida o lookup via drps_campanha.token.
+    const { criarCampanha } = await import("@/lib/drps-campanha");
+    const camp = await criarCampanha(EMP_A, {
+      codigo: "smoke-token",
+      titulo: "Smoke",
+      ciclo: "smoke",
+    });
+    const empA2 = await resolverEmpresaPorToken(camp.token);
+    expect(empA2).toBe(EMP_A);
+
+    // Limpa pra não vazar pro próximo it.
+    await admin`delete from public.drps_campanha where id = ${camp.id}`;
   });
 });

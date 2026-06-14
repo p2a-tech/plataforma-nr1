@@ -3,6 +3,12 @@ import { createHmac, createHash } from "node:crypto";
 import { z } from "zod";
 import { sql, sqlAdmin } from "@/lib/db";
 import { withEmpresa } from "@/lib/tenant";
+import {
+  obterCampanhaPorToken,
+  campanhaAtivaMaisRecente,
+  garantirCampanhaAvulsa,
+  campanhaAceitaRespostas,
+} from "@/lib/drps-campanha";
 
 /**
  * DRPS — Diagnóstico de Riscos Psicossociais (NR-1).
@@ -11,15 +17,16 @@ import { withEmpresa } from "@/lib/tenant";
  * colaborador é o `marcador_anonimo` (hash opaco), usado apenas para
  * idempotência. Sem PII (email/CPF/telefone) em momento algum.
  *
- * ── Token determinístico de campanha ──
- * O instrumento global (template) é acessível ao público via /r/drps/[token].
- * O token resolve para uma EMPRESA específica (que recebeu o link). Para evitar
- * persistir tabela de tokens nesta onda, derivamos deterministicamente:
+ * ── Resolução de token (Onda 5) ──
+ * O token agora vem de `drps_campanha.token` (16 bytes b64url, persistente,
+ * com expiração e suporte a múltiplos ciclos). Substituiu o HMAC determinístico
+ * + força bruta O(n) sobre `empresas` da Onda 4.
  *
- *   token = sha256(AUTH_SECRET + ":" + empresaId + ":drps").slice(0,24)
- *
- * Aceitamos também o atalho de dev `demo-token-<empresaId>` durante a Onda 4.
- * A próxima onda substitui isso por uma tabela `drps_campanha` com expiração.
+ * Mantemos o atalho de dev `demo-token-<empresaId>` GATED por NODE_ENV.
+ * Mantemos `tokenDeCampanha(empresaId)` (HMAC determinístico) como utilitário
+ * legado — não é mais a fonte de verdade da resolução, mas continua sendo
+ * aceito quando bater com um token persistido (compatibilidade com testes/
+ * scripts que ainda usam a derivação).
  */
 
 /* -------------------------------------------------------------------------- */
@@ -77,7 +84,13 @@ function getAuthSecret(): string {
   return "dev-auth-secret-trocar-em-producao";
 }
 
-/** Token determinístico (24 chars) por empresa. */
+/**
+ * Token HMAC determinístico (legado · Onda 4).
+ *
+ * Mantido como utilitário: alguns testes/scripts derivam o token a partir
+ * do empresaId. NÃO é mais a fonte de verdade da resolução pública — agora
+ * o lookup é direto em `drps_campanha.token`.
+ */
 export function tokenDeCampanha(empresaId: string): string {
   return createHmac("sha256", getAuthSecret())
     .update(`${empresaId}:drps`)
@@ -85,32 +98,58 @@ export function tokenDeCampanha(empresaId: string): string {
     .slice(0, 24);
 }
 
-/** Resolve `empresaId` a partir do token (deterministico OU atalho demo). */
+/**
+ * Resolve `empresaId` a partir do token público:
+ *   1) Atalho demo `demo-token-<empresaId>` (gated por NODE_ENV).
+ *   2) Lookup direto em `drps_campanha.token` (Onda 5).
+ *
+ * Retorna apenas o `empresaId` para compatibilidade com a API existente.
+ * Quem precisa de mais info (campanha_id, instrumento_id) deve chamar
+ * `resolverCampanhaPorToken` abaixo.
+ */
 export async function resolverEmpresaPorToken(
   token: string,
 ): Promise<string | null> {
-  // 1) Atalho demo (dev/Onda 4): `demo-token-<empresaId>`
+  const r = await resolverCampanhaPorToken(token);
+  return r?.empresa_id ?? null;
+}
+
+/**
+ * Resolve campanha completa a partir do token. Usado por `/api/drps/responder`
+ * para conhecer `campanha_id` e `instrumento_id` num único lookup.
+ */
+export async function resolverCampanhaPorToken(
+  token: string,
+): Promise<{
+  empresa_id: string;
+  campanha_id: string | null;
+  instrumento_id: string | null;
+} | null> {
+  // 1) Atalho demo (dev): `demo-token-<empresaId>`
   //    Fail-closed em produção — IDs de empresa são humano-legíveis (ex.:
   //    `emp_acme`), então sem gate um atacante poderia floodar respostas DRPS
-  //    falsas. Em prod, o atalho é desativado e só o token HMAC determinístico
-  //    é aceito.
+  //    falsas. Em prod, o atalho é desativado e só o token persistido é aceito.
   if (token.startsWith("demo-token-")) {
     if (process.env.NODE_ENV === "production") return null;
     const empresaId = token.slice("demo-token-".length);
     if (!empresaId) return null;
-    return await empresaExiste(empresaId);
+    const existe = await empresaExiste(empresaId);
+    if (!existe) return null;
+    // Para o demo, deixamos campanha_id null — fallback de `registrarResposta`
+    // pegará a ativa mais recente (ou cria 'Avulso').
+    return { empresa_id: existe, campanha_id: null, instrumento_id: null };
   }
 
-  // 2) Token determinístico: força bruta sobre as empresas (volume baixo em
-  //    clínicas — < milhares). Pragmático para a Onda 4; a próxima onda
-  //    persiste o token em tabela com expiração.
-  const empresas = await sqlAdmin<{ id: string }[]>`
-    select id from public.empresas
-  `;
-  for (const e of empresas) {
-    if (tokenDeCampanha(e.id) === token) return e.id;
-  }
-  return null;
+  // 2) Lookup em `drps_campanha.token` (Onda 5).
+  const camp = await obterCampanhaPorToken(token);
+  if (!camp) return null;
+  // Campanha INATIVA / EXPIRADA → recusa coleta de respostas.
+  if (!campanhaAceitaRespostas(camp)) return null;
+  return {
+    empresa_id: camp.empresa_id,
+    campanha_id: camp.campanha_id,
+    instrumento_id: camp.instrumento_id,
+  };
 }
 
 async function empresaExiste(empresaId: string): Promise<string | null> {
@@ -236,6 +275,7 @@ export interface RespostaResumo {
   id: string;
   empresa_id: string;
   instrumento_id: string;
+  campanha_id: string | null;
   marcador_anonimo: string;
   setor: string | null;
   funcao: string | null;
@@ -248,12 +288,34 @@ export interface RespostaResumo {
 /**
  * Cria a resposta completa (drps_resposta + items + opções) numa transação
  * via withEmpresa — RLS garante isolamento estrito.
+ *
+ * `campanhaId` é OPCIONAL:
+ *   - se fornecido, usa direto (caso comum: token público resolvido pela rota).
+ *   - se ausente, busca a campanha ativa mais recente da empresa.
+ *   - se não houver nenhuma campanha ativa, GARANTE uma "Avulso" como fallback
+ *     (idempotente — não vaza pra UI; mantém invariante "toda resposta tem
+ *     campanha", essencial pro histórico §8).
  */
 export async function registrarResposta(
   empresaId: string,
   instrumentoId: string,
   dados: NovaRespostaDRPS,
+  campanhaId?: string | null,
 ): Promise<RespostaResumo> {
+  // Resolução de campanha ANTES de abrir a transação tenant (campanhaAtivaMaisRecente
+  // e garantirCampanhaAvulsa usam sqlAdmin propositadamente — fallback global).
+  let campIdResolvido: string | null = campanhaId ?? null;
+  if (!campIdResolvido) {
+    const ativa = await campanhaAtivaMaisRecente(empresaId);
+    if (ativa) {
+      campIdResolvido = ativa.campanha_id;
+    } else {
+      // Fallback: cria campanha 'Avulso' (idempotente).
+      const avulsa = await garantirCampanhaAvulsa(empresaId, instrumentoId);
+      campIdResolvido = avulsa.campanha_id;
+    }
+  }
+
   return withEmpresa(empresaId, async () => {
     // 1) Carrega o instrumento + perguntas para validar/mapear códigos.
     const perguntas = await sql<{ id: string; codigo: string; tipo: TipoPergunta }[]>`
@@ -269,21 +331,23 @@ export async function registrarResposta(
     // 2) Cria (ou recupera) a resposta — idempotência por (instrumento, marcador).
     const [resposta] = await sql<RespostaResumo[]>`
       insert into public.drps_resposta
-        (empresa_id, instrumento_id, marcador_anonimo, setor, funcao,
+        (empresa_id, instrumento_id, campanha_id, marcador_anonimo, setor, funcao,
          tempo_empresa, forma_atuacao, canal)
       values
-        (${empresaId}, ${instrumentoId}, ${dados.marcador_anonimo},
+        (${empresaId}, ${instrumentoId}, ${campIdResolvido},
+         ${dados.marcador_anonimo},
          ${dados.setor ?? null}, ${dados.funcao ?? null},
          ${dados.tempo_empresa ?? null}, ${dados.forma_atuacao ?? null},
          ${dados.canal})
       on conflict (instrumento_id, marcador_anonimo) do update
          set respondido_em = excluded.respondido_em,
+             campanha_id   = excluded.campanha_id,
              setor         = excluded.setor,
              funcao        = excluded.funcao,
              tempo_empresa = excluded.tempo_empresa,
              forma_atuacao = excluded.forma_atuacao,
              canal         = excluded.canal
-      returning id, empresa_id, instrumento_id, marcador_anonimo,
+      returning id, empresa_id, instrumento_id, campanha_id, marcador_anonimo,
                 setor, funcao, tempo_empresa, forma_atuacao, canal,
                 respondido_em::text as respondido_em
     `;
@@ -369,7 +433,7 @@ export async function listarRespostas(
     const desde = filtros.desde ?? null;
     const setor = filtros.setor ?? null;
     return sql<RespostaResumo[]>`
-      select id, empresa_id, instrumento_id, marcador_anonimo,
+      select id, empresa_id, instrumento_id, campanha_id, marcador_anonimo,
              setor, funcao, tempo_empresa, forma_atuacao, canal,
              respondido_em::text as respondido_em
         from public.drps_resposta

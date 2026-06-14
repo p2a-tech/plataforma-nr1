@@ -6,17 +6,24 @@ import {
   Brain,
   CheckCircle2,
   ClipboardCheck,
+  ClipboardList,
   FileSignature,
   Gauge,
+  Grid3x3,
+  HandHeart,
   Headphones,
+  HeartHandshake,
   HeartPulse,
   Landmark,
+  LayoutGrid,
   LineChart,
   Lock,
+  MessageSquareText,
   Radio,
   ShieldCheck,
   Sparkles,
   Stethoscope,
+  Users,
   Workflow,
   XCircle,
   Zap,
@@ -37,6 +44,7 @@ export default function NR1Landing() {
       <StatsBar />
       <Urgencia />
       <ComoFunciona />
+      <Metodologia />
       <Diferencial />
       <ProvaSocial />
       <ParaClinicas />
@@ -312,10 +320,10 @@ function KPI({
 /* -------------------------------------------------------------------------- */
 function StatsBar() {
   const stats = [
-    { num: "7", sub: "dimensões da NR-1 cobertas", icon: <ClipboardCheck className="h-5 w-5" /> },
+    { num: "21 perguntas", sub: "instrumento DRPS · 90 segundos", icon: <ClipboardList className="h-5 w-5" /> },
+    { num: "5 dimensões", sub: "37 fatores da NR-1 mapeados", icon: <LayoutGrid className="h-5 w-5" /> },
+    { num: "matriz 3×3", sub: "classificação auditável de risco", icon: <Grid3x3 className="h-5 w-5" /> },
     { num: "100%", sub: "conforme eSocial S-2240", icon: <BadgeCheck className="h-5 w-5" /> },
-    { num: "14 dias", sub: "tempo médio de implantação", icon: <Zap className="h-5 w-5" /> },
-    { num: "LGPD", sub: "por design · DPIA inclusa", icon: <ShieldCheck className="h-5 w-5" /> },
   ];
   return (
     <section className="border-y border-line/10 bg-navy-deep/40">
@@ -428,10 +436,10 @@ function ComoFunciona() {
       n: "01",
       tone: "ia" as const,
       icon: <Radio className="h-5 w-5" />,
-      titulo: "Escuta IA",
-      sub: "WhatsApp · 7 perguntas · 90 segundos",
+      titulo: "Escuta IA · DRPS",
+      sub: "WhatsApp · 21 perguntas · 90 segundos",
       bullets: [
-        "Pulsos quinzenais ou mensais (você decide)",
+        "Instrumento DRPS validado em campo: 21 perguntas em 90s",
         "K-anonimato mínimo de 7 pessoas: ninguém é identificável",
         "Adesão típica de 72 a 85% — sem brindes, sem chefe pedindo",
       ],
@@ -441,10 +449,10 @@ function ComoFunciona() {
       tone: "ia" as const,
       icon: <FileSignature className="h-5 w-5" />,
       titulo: "PGR vivo + eSocial",
-      sub: "Inventário automático · S-2240 pronto",
+      sub: "Matriz 3×3 · PGR em 9 seções · S-2240",
       bullets: [
-        "IA classifica respostas em riscos NR-1 (ofensores)",
-        "PGR psicossocial gerado e atualizado a cada ciclo",
+        "Escore por dimensão e classificação automática (baixo/moderado/alto)",
+        "Matriz de risco 3×3 + PGR em 9 seções, exatamente o que o auditor espera",
         "Exportação de S-2240 direto para o eSocial",
       ],
     },
@@ -453,10 +461,10 @@ function ComoFunciona() {
       tone: "humano" as const,
       icon: <Stethoscope className="h-5 w-5" />,
       titulo: "Cuidado humano (NR-7)",
-      sub: "Casos individuais → clínica parceira",
+      sub: "Programa Interventivo → clínica parceira",
       bullets: [
-        "Casos individuais nunca passam pela IA",
-        "Encaminhamento anonimizado para psicólogo parceiro",
+        "Risco alto dispara o Programa Interventivo → encaminhamento NR-7",
+        "Caso individual nunca passa pela IA: vai anonimizado ao psicólogo parceiro",
         "Empresa cumpre obrigação org sem invadir indivíduo",
       ],
     },
@@ -547,11 +555,206 @@ function ComoFunciona() {
 }
 
 /* -------------------------------------------------------------------------- */
+/*  Metodologia — o método DRPS por dentro (5 dimensões + fluxo + matriz)       */
+/* -------------------------------------------------------------------------- */
+function Metodologia() {
+  const dimensoes = [
+    {
+      icon: <Workflow className="h-5 w-5" />,
+      nome: "Organização do trabalho",
+      desc: "Sobrecarga, ritmo, jornada e autonomia.",
+    },
+    {
+      icon: <HeartPulse className="h-5 w-5" />,
+      nome: "Carga emocional",
+      desc: "Exposição ao sofrimento e intensidade afetiva.",
+    },
+    {
+      icon: <Users className="h-5 w-5" />,
+      nome: "Relações de trabalho",
+      desc: "Comunicação, suporte da equipe e da liderança.",
+    },
+    {
+      icon: <LayoutGrid className="h-5 w-5" />,
+      nome: "Condições de trabalho",
+      desc: "Ambiente, ruído, privacidade e ergonomia.",
+    },
+    {
+      icon: <ShieldCheck className="h-5 w-5" />,
+      nome: "Segurança emocional",
+      desc: "Assédio, violência e eventos traumáticos.",
+    },
+  ];
+
+  const fluxo = [
+    {
+      icon: <MessageSquareText className="h-4 w-4" />,
+      t: "21 perguntas em 90s",
+      s: "4 demografia + 12 Likert + 4 frequência/impacto + 3 abertas, por WhatsApp.",
+      tone: "ia" as const,
+    },
+    {
+      icon: <Gauge className="h-4 w-4" />,
+      t: "Escore por dimensão",
+      s: "Média ≤2,0 = baixo · 2,1–3,5 = moderado · >3,5 = alto. Classificação automática.",
+      tone: "ia" as const,
+    },
+    {
+      icon: <Grid3x3 className="h-4 w-4" />,
+      t: "Matriz de risco 3×3",
+      s: "Probabilidade × Impacto → Baixo / Moderado / Alto. O método que o auditor espera.",
+      tone: "ia" as const,
+    },
+    {
+      icon: <ClipboardCheck className="h-4 w-4" />,
+      t: "Plano de ação direcionado",
+      s: "Risco baixo/moderado → Prevencionista. Risco alto → Interventivo (NR-7).",
+      tone: "humano" as const,
+    },
+  ];
+
+  return (
+    <section className="mx-auto max-w-6xl px-5 py-20 md:px-8 md:py-28">
+      <div className="mb-12 max-w-3xl">
+        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-ia/30 bg-ia/10 px-3 py-1 text-xs font-medium text-ia">
+          <ClipboardList className="h-3.5 w-3.5" /> Metodologia DRPS
+        </div>
+        <h2 className="font-display text-3xl font-semibold leading-tight tracking-tight text-ink md:text-5xl">
+          O método DRPS por dentro. <br className="hidden md:block" />
+          <span className="text-ink-muted">Feito para passar em auditoria.</span>
+        </h2>
+        <p className="mt-4 text-base text-ink-muted md:text-lg">
+          Por trás da escuta há um <strong className="text-ink">instrumento DRPS validado em campo</strong>:
+          21 perguntas que viram escore por dimensão, matriz de risco e plano de ação — tudo
+          rastreável e <strong className="text-ia">alinhado às 5 dimensões e aos 37 fatores da NR-1</strong>.
+        </p>
+      </div>
+
+      {/* 5 dimensões da NR-1 */}
+      <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">
+        As 5 dimensões avaliadas
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        {dimensoes.map((d) => (
+          <div key={d.nome} className="panel group p-5 transition hover:border-ia/30">
+            <div className="mb-3 grid h-10 w-10 place-items-center rounded-lg bg-ia/15 text-ia transition group-hover:scale-110">
+              {d.icon}
+            </div>
+            <h3 className="mb-1.5 font-display text-base font-semibold tracking-tight text-ink">
+              {d.nome}
+            </h3>
+            <p className="text-xs leading-relaxed text-ink-muted">{d.desc}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Fluxo: pergunta → escore → matriz → plano */}
+      <div className="mt-12 mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">
+        Do dado bruto ao plano de ação
+      </div>
+      <div className="grid gap-3 md:grid-cols-4">
+        {fluxo.map((f, i) => (
+          <div key={f.t} className="panel relative p-5">
+            {i < fluxo.length - 1 && (
+              <ArrowRight className="absolute -right-3 top-1/2 hidden h-5 w-5 -translate-y-1/2 text-ink-muted/40 md:block" />
+            )}
+            <div
+              className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg ${
+                f.tone === "ia" ? "bg-ia/15 text-ia" : "bg-humano/15 text-humano"
+              }`}
+            >
+              {f.icon}
+            </div>
+            <div
+              className={`mb-1 text-[10px] font-semibold uppercase tracking-wider ${
+                f.tone === "ia" ? "text-ia" : "text-humano"
+              }`}
+            >
+              Etapa {String(i + 1).padStart(2, "0")}
+            </div>
+            <h3 className="mb-1.5 font-display text-base font-semibold tracking-tight text-ink">
+              {f.t}
+            </h3>
+            <p className="text-xs leading-relaxed text-ink-muted">{f.s}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Dois programas de resposta */}
+      <div className="mt-6 grid gap-4 md:grid-cols-2">
+        <div className="panel p-6">
+          <div className="mb-3 flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-lg bg-ok/15 text-ok">
+              <HandHeart className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-ok">
+                Risco baixo / moderado
+              </div>
+              <h3 className="font-display text-lg font-semibold tracking-tight text-ink">
+                Programa Prevencionista
+              </h3>
+            </div>
+          </div>
+          <p className="text-sm leading-relaxed text-ink-muted">
+            Ações organizacionais: intervalos mínimos entre atendimentos, limite diário de
+            pacientes, supervisão clínica, ajustes de agenda e ambiente. Atua antes do adoecimento.
+          </p>
+        </div>
+        <div className="panel p-6">
+          <div className="mb-3 flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-lg bg-humano/15 text-humano">
+              <HeartHandshake className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-humano">
+                Risco alto / crítico
+              </div>
+              <h3 className="font-display text-lg font-semibold tracking-tight text-ink">
+                Programa Interventivo
+              </h3>
+            </div>
+          </div>
+          <p className="text-sm leading-relaxed text-ink-muted">
+            Encaminhamento individual à clínica parceira (NR-7), suspensão temporária da
+            exposição ao fator e plano de retorno acompanhado por responsável técnico.
+          </p>
+        </div>
+      </div>
+
+      {/* Prova de credibilidade: co-design clínico */}
+      <div className="mt-6 flex flex-col items-center justify-between gap-4 rounded-2xl border border-humano/20 bg-gradient-to-r from-humano/5 via-fill/5 to-ia/5 p-6 md:flex-row md:p-8">
+        <div className="flex items-center gap-4">
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-humano/15 text-humano">
+            <Stethoscope className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="font-display text-lg font-semibold tracking-tight text-ink">
+              Co-desenhado com psicólogas que aplicam em clínicas reais
+            </div>
+            <p className="text-sm text-ink-muted">
+              O instrumento não nasceu numa planilha de TI: foi calibrado em campo, com quem
+              vive o sofrimento psíquico no trabalho todos os dias.
+            </p>
+          </div>
+        </div>
+        <span className="tag bg-ia/15 text-ia ring-1 ring-inset ring-ia/25">
+          <BadgeCheck className="h-3.5 w-3.5" /> Validado em campo
+        </span>
+      </div>
+    </section>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Diferencial — tabela vs concorrência                                       */
 /* -------------------------------------------------------------------------- */
 function Diferencial() {
   const linhas = [
     { criterio: "NR-1 psicossocial nativa", excel: false, generica: false, previa: true },
+    { criterio: "Instrumento DRPS validado por psicólogas", excel: false, generica: false, previa: true },
+    { criterio: "Matriz 3×3 + classificação automática de risco", excel: false, generica: false, previa: true },
+    { criterio: "Programa Prevencionista + Interventivo automático", excel: false, generica: false, previa: true },
     { criterio: "eSocial S-2240 automático", excel: false, generica: false, previa: true },
     { criterio: "Cuidado clínico via parceiro (NR-7)", excel: false, generica: false, previa: true },
     { criterio: "LGPD por design (DPIA inclusa)", excel: false, generica: "parcial", previa: true },
@@ -784,7 +987,7 @@ function ParaClinicas() {
               { t: "0 secretária", d: "Agenda, lembrete, transcrição automática — tudo na plataforma." },
               { t: "Você define o honorário", d: "Sem leilão. Sem comissão escondida. Você diz o seu valor." },
               { t: "Trabalho remoto", d: "Atende de onde estiver. Brasil inteiro. Inclusive horário noturno se quiser." },
-              { t: "Caso já contextualizado", d: "Recebe o ofensor que disparou + histórico de pulsos da pessoa, anonimizado." },
+              { t: "Caso já contextualizado", d: "Recebe o caso já com escore DRPS por dimensão, classificação de risco e o fator que disparou — anonimizado, pronto para o atendimento clínico." },
             ].map((b) => (
               <li key={b.t} className="flex items-start gap-3">
                 <div className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md bg-humano/15 text-humano">
@@ -923,8 +1126,12 @@ function FAQ() {
       a: "Cobrança por colaborador/mês, com piso e teto. A demonstração de 20 minutos inclui orçamento personalizado. Em geral o investimento paga em 1 (uma) multa evitada.",
     },
     {
-      q: "Como é a coleta com os colaboradores?",
-      a: "Pulsos curtos por WhatsApp — 7 perguntas, cerca de 90 segundos. Adesão típica entre 72 e 85%, sem brinde nem chefe pedindo. Você define a frequência (quinzenal, mensal etc).",
+      q: "Como funciona o questionário?",
+      a: "É um instrumento DRPS validado em campo: 21 perguntas (4 de perfil, 12 em escala Likert, 4 de frequência emocional e impacto, 3 abertas), respondidas em cerca de 90 segundos por WhatsApp ou link. As respostas geram um escore por colaborador e por dimensão da NR-1, sempre de forma anônima (k-anonimato mínimo de 7). Você define a frequência (quinzenal, mensal etc.).",
+    },
+    {
+      q: "Vocês seguem alguma metodologia validada?",
+      a: "Sim. A metodologia foi co-desenhada com psicólogas que atuam em clínicas de saúde mental reais e calibrada em campo. Avaliamos as 5 dimensões e os 37 fatores psicossociais reconhecidos pela NR-1, classificamos cada fator numa matriz de risco 3×3 (probabilidade × impacto → baixo/moderado/alto) e geramos um PGR em 9 seções no formato que auditores e fiscais do MPT esperam — com responsável técnico (CRP/CRM/CREA), hash SHA-256 e selo digital.",
     },
     {
       q: "Funciona pra empresa pequena ou média?",

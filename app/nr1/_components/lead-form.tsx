@@ -125,6 +125,21 @@ export function LeadForm({ tipoInicial = "empresa", id = "form" }: Props) {
         setEnviando(false);
         return;
       }
+      // Eventos de conversão (Meta Pixel + GA4) — falham silenciosamente se
+      // os scripts não carregaram (ex.: bloqueador de anúncios, opt-out).
+      try {
+        (window as unknown as { fbq?: (...a: unknown[]) => void }).fbq?.(
+          "track",
+          "Lead",
+        );
+        (window as unknown as { gtag?: (...a: unknown[]) => void }).gtag?.(
+          "event",
+          "generate_lead",
+          { value: 0, currency: "BRL" },
+        );
+      } catch {
+        /* no-op */
+      }
       router.push(`/nr1/obrigado?t=${tipo}`);
     } catch {
       setErro("Sem conexão. Verifique sua internet e tente de novo.");
@@ -134,11 +149,16 @@ export function LeadForm({ tipoInicial = "empresa", id = "form" }: Props) {
 
   return (
     <div id={id} className="panel mx-auto w-full max-w-2xl p-7 md:p-9">
-      {/* Tabs tipo */}
-      <div className="mb-6 inline-flex rounded-full border border-line/15 bg-fill/5 p-1">
+      {/* Tabs tipo (aria-pressed: leitor de tela anuncia qual está ativa) */}
+      <div
+        className="mb-6 inline-flex rounded-full border border-line/15 bg-fill/5 p-1"
+        role="group"
+        aria-label="Tipo de cadastro"
+      >
         <button
           type="button"
           onClick={() => setTipo("empresa")}
+          aria-pressed={tipo === "empresa"}
           className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
             tipo === "empresa"
               ? "bg-ia text-onaccent shadow-glow"
@@ -150,6 +170,7 @@ export function LeadForm({ tipoInicial = "empresa", id = "form" }: Props) {
         <button
           type="button"
           onClick={() => setTipo("clinica")}
+          aria-pressed={tipo === "clinica"}
           className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
             tipo === "clinica"
               ? "bg-humano text-onaccent shadow-glowHuman"

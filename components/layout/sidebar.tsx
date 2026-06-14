@@ -36,12 +36,13 @@ export function Sidebar({ onNavigate, vidas }: { onNavigate?: () => void; vidas?
         {navItems.map((item) => {
           const ativo = pathname === item.href;
           const Icon = item.icon;
-          const accent = item.ator === "clinica" ? "humano" : "ia";
+          const accent = item.ator === "clinica" || item.ator === "humano" ? "humano" : "ia";
           return (
             <Link
               key={item.href}
               href={item.href}
               onClick={onNavigate}
+              aria-current={ativo ? "page" : undefined}
               className={cn(
                 "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all",
                 ativo

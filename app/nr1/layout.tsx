@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
+import { MetaPixel } from "@/components/analytics/meta-pixel";
+import { GA4 } from "@/components/analytics/ga4";
 
 /**
  * Layout próprio da landing page /nr1.
  * Sem sidebar/header da plataforma — é página pública para tráfego pago.
  * Força tema dark (a landing foi desenhada nele) sem quebrar o resto do app.
+ *
+ * Inclui Meta Pixel e GA4 (no-op se as env vars não estiverem setadas).
  */
 
 export const metadata: Metadata = {
@@ -36,5 +40,11 @@ export const viewport = {
 export default function NR1Layout({ children }: { children: React.ReactNode }) {
   // O <html> raiz (em app/layout.tsx) já vem com a classe `dark` por padrão.
   // Aqui só fornecemos um wrapper que ignora o sidebar da plataforma.
-  return <div className="bg-app min-h-screen">{children}</div>;
+  return (
+    <div className="bg-app min-h-screen">
+      <MetaPixel />
+      <GA4 />
+      {children}
+    </div>
+  );
 }

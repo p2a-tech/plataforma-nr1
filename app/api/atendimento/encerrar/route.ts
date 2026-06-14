@@ -18,7 +18,7 @@ import {
   TURNOS,
 } from "@previa/contracts";
 import { signPayload, SIGNATURE_HEADER, TIMESTAMP_HEADER } from "@previa/contracts/signing";
-import { lookupSecret } from "@/lib/clinic-secrets";
+import { lookupSecretAsync } from "@/lib/clinic-secrets";
 import { getSessao } from "@/lib/auth";
 
 export const runtime = "nodejs";
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
   const sessao = getSessao();
   const clinicaId = sessao?.clinica_id ?? dados.clinica_id;
 
-  const segredo = lookupSecret(clinicaId);
+  const segredo = await lookupSecretAsync(clinicaId);
   if (!segredo) {
     return NextResponse.json(
       { erro: "Clínica sem segredo provisionado no servidor" },

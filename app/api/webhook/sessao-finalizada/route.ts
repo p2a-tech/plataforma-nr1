@@ -30,7 +30,7 @@ import {
   signPayload,
 } from "@previa/contracts/signing";
 import { sqlAdmin as sql, dbHabilitado } from "@/lib/db";
-import { lookupSecret, fingerprint } from "@/lib/clinic-secrets";
+import { lookupSecretAsync, fingerprint } from "@/lib/clinic-secrets";
 
 export const runtime = "nodejs"; // node:crypto e Postgres.js precisam do runtime Node
 export const dynamic = "force-dynamic";
@@ -141,7 +141,9 @@ export async function POST(req: NextRequest) {
   }
 
   // ─── 4. Recuperar segredo da clínica + checar fingerprint no DB ──────────
-  const segredo = lookupSecret(clinicaId);
+  // Hardening E8: tenta primeiro `clinicas.secret_cifrado` (decifrado com
+  // CLINIC_KEK), com fallback ao CLINIC_SECRETS_JSON.
+  const segredo = await lookupSecretAsync(clinicaId);
   if (!segredo) {
     await registrarAudit({
       clinica_id: clinicaId,

@@ -10,6 +10,7 @@ import {
   Scale,
   Cpu,
   HeartHandshake,
+  Download,
 } from "lucide-react";
 import { Card, CardTitle, PageHeader, Badge, ProgressBar } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
@@ -130,6 +131,15 @@ export default async function ConformidadePage() {
               <EventoCard key={e.codigo} ev={e} />
             ))}
           </div>
+
+          {/* Download S-2240 — XML agregado do mês atual (NR-1 psicossocial) */}
+          <a
+            href={`/api/esocial/s2240?periodo=${new Date().toISOString().slice(0, 7)}`}
+            download
+            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-ia/30 bg-ia/10 px-4 py-2.5 text-sm font-medium text-ia transition hover:bg-ia/20"
+          >
+            <Download className="h-4 w-4" /> Baixar S-2240 (XML)
+          </a>
         </Card>
       </div>
 

@@ -12,3 +12,7 @@ next-env.d.ts
 !.env.production.example
 
 .vercel
+
+# logs locais (next dev redirecionado)
+.dev.log
+.dev.err.log

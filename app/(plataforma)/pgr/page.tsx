@@ -9,11 +9,16 @@ import {
   CheckCircle2,
   Bot,
   FileDown,
+  ClipboardList,
+  Eye,
 } from "lucide-react";
+import Link from "next/link";
 import { Card, CardTitle, PageHeader, Badge, ProgressBar } from "@/components/ui/primitives";
 import { empresa } from "@/lib/mock-data";
 import { getPgrStatus, type PgrAssinatura } from "@/lib/queries";
+import { garantirRevisaoAtual } from "@/lib/pgr";
 import { AssinarForm } from "./assinar-form";
+import { DadosForm } from "./dados-form";
 import { exigirSessao } from "@/lib/auth";
 import { withEmpresa } from "@/lib/tenant";
 
@@ -25,8 +30,13 @@ function dataFmt(iso: string) {
 
 export default async function PgrPage() {
   const sessao = exigirSessao(["sst", "admin"]);
-  const pgr = await withEmpresa(sessao.empresa_id, () => getPgrStatus());
-  const { resumo, ultima, pendente, motivo } = pgr;
+  // Garante que uma revisão em rascunho existe antes de buscar status.
+  const pgr = await withEmpresa(sessao.empresa_id, async () => {
+    await garantirRevisaoAtual(sessao.empresa_id);
+    return getPgrStatus();
+  });
+  const { resumo, ultima, pendente, motivo, dadosOkebambo } = pgr;
+  const numeroRevisaoEdicao = dadosOkebambo?.revisao ?? pgr.proximaRevisao;
 
   return (
     <div className="space-y-6">
@@ -138,6 +148,28 @@ export default async function PgrPage() {
           )}
         </Card>
       </div>
+
+      {/* Dados Okêbambo (Seções 1, 3, 4.1, 4.2, 9) */}
+      <Card>
+        <CardTitle
+          icon={<ClipboardList className="h-5 w-5" />}
+          hint="Identificação, atividades, riscos físicos/ergonômicos e responsável técnico — Onda 4 · §6 do material Okêbambo"
+          action={
+            <div className="flex items-center gap-2">
+              <Badge tone="ia">rev {numeroRevisaoEdicao}</Badge>
+              <Link
+                href={`/pgr/${numeroRevisaoEdicao}/preview`}
+                className="flex items-center gap-1.5 rounded-lg bg-ia/10 px-2.5 py-1 text-xs font-medium text-ia ring-1 ring-inset ring-ia/25 hover:bg-ia/20"
+              >
+                <Eye className="h-3.5 w-3.5" /> Pré-visualizar 9 seções
+              </Link>
+            </div>
+          }
+        >
+          Dados completos do PGR (formato Okêbambo)
+        </CardTitle>
+        <DadosForm revisao={numeroRevisaoEdicao} inicial={dadosOkebambo} />
+      </Card>
 
       {/* Histórico de revisões */}
       <Card>

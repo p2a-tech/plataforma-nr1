@@ -19,6 +19,14 @@ import { empresa, type Risco } from "@/lib/mock-data";
 import { getInventarioRiscos } from "@/lib/queries";
 import { exigirSessao } from "@/lib/auth";
 import { withEmpresa } from "@/lib/tenant";
+import {
+  MatrizRisco,
+  type CelulaMatriz,
+} from "@/components/riscos/matriz-risco";
+import { listarFatoresComRisco, listarDimensoes } from "@/lib/riscos-nr1";
+import type { Probabilidade, Impacto } from "@/lib/matriz-risco";
+import { SecaoFatoresNR1 } from "./_components/secao-fatores-nr1";
+import type { DimensaoBloco } from "./_components/fatores-por-dimensao";
 
 export const dynamic = "force-dynamic";
 
@@ -58,8 +66,20 @@ const statusConfig: Record<
 export default async function RiscosPage() {
   const sessao = exigirSessao(["sst", "admin"]);
   const eixo = [1, 2, 3, 4, 5];
-  const { fonte, riscos } = await withEmpresa(sessao.empresa_id, () => getInventarioRiscos());
+  const [{ fonte, riscos }, fatoresNR1, dimensoesNR1] = await Promise.all([
+    withEmpresa(sessao.empresa_id, () => getInventarioRiscos()),
+    listarFatoresComRisco(sessao.empresa_id),
+    listarDimensoes(),
+  ]);
   const dadosReais = fonte === "real";
+
+  // Monta dados pra <MatrizRisco /> (3×3 NR-1).
+  const celulasMatriz: CelulaMatriz[] = montarCelulasMatriz(fatoresNR1);
+  // Monta dados pra <FatoresPorDimensao />.
+  const blocosDimensao: DimensaoBloco[] = montarBlocosDimensao(
+    dimensoesNR1,
+    fatoresNR1,
+  );
 
   const resumo = [
     { id: "em-andamento" as const, rotulo: "Em andamento", icon: Loader, color: "text-ia" },
@@ -130,8 +150,13 @@ export default async function RiscosPage() {
         })}
       </div>
 
+      {/* ─── NR-1 (Onda 4) · matriz 3×3 + fatores por dimensão ─────────── */}
+      <MatrizRisco celulas={celulasMatriz} />
+
+      <SecaoFatoresNR1 dimensoes={blocosDimensao} />
+
       <div className="grid gap-4 lg:grid-cols-5">
-        {/* 2 — Matriz de risco 5×5 */}
+        {/* 2 — Matriz de risco 5×5 (inventário legado) */}
         <Card className="lg:col-span-2">
           <CardTitle
             icon={<Grid3x3 className="h-5 w-5" />}
@@ -286,6 +311,52 @@ export default async function RiscosPage() {
       </div>
     </div>
   );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Helpers NR-1 (Onda 4) — agrupam fatores em células 3×3 e blocos dimensão   */
+/* -------------------------------------------------------------------------- */
+type FatorNR1ComRisco = Awaited<ReturnType<typeof listarFatoresComRisco>>[number];
+
+function montarCelulasMatriz(fatores: FatorNR1ComRisco[]): CelulaMatriz[] {
+  const probs: Probabilidade[] = ["alta", "media", "baixa"];
+  const impactos: Impacto[] = ["baixo", "medio", "alto"];
+  // K-anonimato (LGPD): só contamos fatores cuja amostra atingiu o mínimo k=7.
+  // Fatores com amostra insuficiente seguem visíveis no accordion (com badge),
+  // mas não influenciam a contagem da matriz 3×3.
+  const elegiveis = fatores.filter((f) => f.kAnonimato);
+  return probs.flatMap((prob) =>
+    impactos.map((imp) => ({
+      prob,
+      impacto: imp,
+      fatores: elegiveis
+        .filter((f) => f.probabilidade === prob && f.impacto === imp)
+        .map((f) => ({ id: f.id, nome: f.nome })),
+    })),
+  );
+}
+
+function montarBlocosDimensao(
+  dimensoes: Awaited<ReturnType<typeof listarDimensoes>>,
+  fatores: FatorNR1ComRisco[],
+): DimensaoBloco[] {
+  return dimensoes.map((d) => ({
+    id: d.id,
+    nome: d.nome,
+    fatores: fatores
+      .filter((f) => f.dim_id === d.id)
+      .map((f) => ({
+        id: f.id,
+        nome: f.nome,
+        probabilidade: f.probabilidade,
+        impacto: f.impacto,
+        classificacao: f.classificacao,
+        frequencia: f.frequencia,
+        n_citacoes: f.n_citacoes,
+        n_respostas: f.n_respostas,
+        kAnonimato: f.kAnonimato,
+      })),
+  }));
 }
 
 /* -------------------------------------------------------------------------- */

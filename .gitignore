@@ -16,3 +16,7 @@ next-env.d.ts
 # logs locais (next dev redirecionado)
 .dev.log
 .dev.err.log
+
+# Material clínico real da Okêbambo (parceira) — fonte de referência interna,
+# inspira backlog em BACKLOG_OKEBAMBO.md mas NÃO entra no repo.
+material-psico/

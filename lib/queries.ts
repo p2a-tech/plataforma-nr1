@@ -1,7 +1,7 @@
 import "server-only";
 import { sql, dbHabilitado } from "@/lib/db";
 import { OFENSORES_LABEL, K_MIN, type OfensorTag } from "@previa/contracts";
-import { hashConteudo } from "@/lib/pgr";
+import { hashConteudo, obterRevisaoAtual, type PgrRevisao } from "@/lib/pgr";
 import { energiaParaRisco } from "@/lib/radar";
 import { empresaAtual } from "@/lib/tenant";
 import { empresa } from "@/lib/mock-data";
@@ -620,13 +620,16 @@ export interface PgrStatus {
   proximaRevisao: number;
   revisaoVigente: number | null;
   historico: PgrAssinatura[];
+  /** Dados Okêbambo da revisão atual (rascunho) — usados pelo PDF e UI. */
+  dadosOkebambo: PgrRevisao | null;
 }
 
-/** Monta o snapshot canônico + hash a partir dos riscos e da conformidade. */
+/** Monta o snapshot canônico + hash a partir dos riscos, conformidade e dados Okêbambo. */
 function montarSnapshot(
   riscos: Risco[],
   conformidade: number,
   totalEventos: number,
+  dadosOkebambo: PgrRevisao | null,
 ): { hash: string; resumo: PgrResumo; canonico: unknown } {
   const nivel = (r: Risco) => r.severidade * r.probabilidade;
   const criticos = riscos.filter((r) => nivel(r) >= 15).length;
@@ -645,11 +648,30 @@ function montarSnapshot(
       (a.setor + a.fonte).localeCompare(b.setor + b.fonte),
     );
 
+  // Extensão Okêbambo (Onda 4 §6) — os campos editáveis entram na canonicalização
+  // para que qualquer alteração nos dados invalide a assinatura anterior.
+  const okebambo = dadosOkebambo
+    ? {
+        cnpj: dadosOkebambo.cnpj ?? null,
+        razao_social: dadosOkebambo.razao_social ?? null,
+        nome_fantasia: dadosOkebambo.nome_fantasia ?? null,
+        endereco: dadosOkebambo.endereco ?? null,
+        responsavel_tecnico_nome: dadosOkebambo.responsavel_tecnico_nome ?? null,
+        responsavel_tecnico_registro: dadosOkebambo.responsavel_tecnico_registro ?? null,
+        responsavel_tecnico_conselho: dadosOkebambo.responsavel_tecnico_conselho ?? null,
+        publico_atendido: dadosOkebambo.publico_atendido ?? null,
+        descricao_atividades: dadosOkebambo.descricao_atividades ?? null,
+        riscos_fisicos: dadosOkebambo.riscos_fisicos ?? [],
+        riscos_ergonomicos: dadosOkebambo.riscos_ergonomicos ?? [],
+      }
+    : null;
+
   const canonico = {
     empresa: empresa.cnpj,
     totalEventos,
     conformidade,
     riscos: riscosCanon,
+    okebambo,
   };
   const resumo: PgrResumo = {
     totalEventos,
@@ -664,15 +686,21 @@ function montarSnapshot(
 }
 
 export async function getPgrStatus(): Promise<PgrStatus> {
-  // Riscos + conformidade + total de eventos compõem o conteúdo do PGR.
-  const [{ riscos, fonte: fr }, conf, resumoGeral] = await Promise.all([
+  // Riscos + conformidade + total de eventos + dados Okêbambo compõem o conteúdo do PGR.
+  const [{ riscos, fonte: fr }, conf, resumoGeral, dadosOkebambo] = await Promise.all([
     getInventarioRiscos(),
     getConformidade(),
     getResumo(),
+    obterRevisaoAtual().catch(() => null),
   ]);
   const totalEventos =
     resumoGeral.fonte === "real" ? resumoGeral.totalAtendimentos : 0;
-  const { hash, resumo } = montarSnapshot(riscos, conf.conformidade, totalEventos);
+  const { hash, resumo } = montarSnapshot(
+    riscos,
+    conf.conformidade,
+    totalEventos,
+    dadosOkebambo,
+  );
   const fonte: Fonte = fr === "real" || conf.fonte === "real" ? "real" : "mock";
 
   let historico: PgrAssinatura[] = [];
@@ -705,6 +733,7 @@ export async function getPgrStatus(): Promise<PgrStatus> {
     proximaRevisao: maxRevisao + 1,
     revisaoVigente: !pendente && ultima ? ultima.revisao : null,
     historico,
+    dadosOkebambo,
   };
 }
 

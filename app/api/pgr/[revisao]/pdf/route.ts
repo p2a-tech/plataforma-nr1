@@ -11,6 +11,7 @@ import { exigirSessao } from "@/lib/auth";
 import { withEmpresa } from "@/lib/tenant";
 import { sql, dbHabilitado } from "@/lib/db";
 import { getInventarioRiscos, type PgrAssinatura } from "@/lib/queries";
+import { obterRevisaoAtual } from "@/lib/pgr";
 import { gerarPgrPdf } from "@/lib/pgr-pdf";
 
 export const runtime = "nodejs";
@@ -28,7 +29,7 @@ export async function GET(
   if (!dbHabilitado) return new Response("Banco indisponível", { status: 503 });
 
   // Tudo dentro do escopo de empresa — RLS + filtros app-level.
-  const { assinatura, riscos } = await withEmpresa(sessao.empresa_id, async () => {
+  const { assinatura, riscos, dados, resumo } = await withEmpresa(sessao.empresa_id, async () => {
     const [ass] = await sql<PgrAssinatura[]>`
       select revisao, assinante_nome, assinante_papel, assinante_registro,
              assinado_em::text as assinado_em, conteudo_hash, selo
@@ -37,23 +38,20 @@ export async function GET(
       limit 1
     `;
     const { riscos } = await getInventarioRiscos();
-    return { assinatura: ass, riscos };
+    // Reconstrói o resumo a partir do snapshot armazenado na assinatura.
+    const [resumoRow] = await sql<{ resumo: any }[]>`
+      select resumo from public.pgr_assinaturas
+      where revisao = ${revisao} limit 1
+    `;
+    const dados = await obterRevisaoAtual();
+    return { assinatura: ass, riscos, dados, resumo: resumoRow?.resumo };
   });
 
   if (!assinatura) {
     return new Response("Revisão não encontrada", { status: 404 });
   }
 
-  // Reconstrói o resumo a partir do snapshot armazenado na assinatura.
-  // (lib/queries.ts grava o `resumo` JSONB no INSERT — vamos lê-lo.)
-  const [{ resumo }] = await withEmpresa(sessao.empresa_id, () =>
-    sql<{ resumo: any }[]>`
-      select resumo from public.pgr_assinaturas
-      where revisao = ${revisao} limit 1
-    `,
-  );
-
-  const pdf = await gerarPgrPdf({ assinatura, resumo, riscos });
+  const pdf = await gerarPgrPdf({ assinatura, resumo, riscos, dados });
 
   return new Response(pdf as unknown as BodyInit, {
     status: 200,

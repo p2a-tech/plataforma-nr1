@@ -27,6 +27,7 @@ export const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, ator: "ia", descricao: "Visão SST / compliance" },
   { href: "/escuta", label: "Escuta Ativa", icon: RadioTower, ator: "ia", descricao: "Radar IA · micro-pulsos" },
   { href: "/escuta/risco-grave", label: "Risco grave/iminente", icon: AlertOctagon, ator: "humano", descricao: "Protocolo NR-1 · emergência" },
+  { href: "/escuta/drps", label: "DRPS · Questionário", icon: ClipboardList, ator: "ia", descricao: "Diagnóstico psicossocial NR-1" },
   { href: "/riscos", label: "Inventário de Riscos", icon: ClipboardList, ator: "ia", descricao: "PGR vivo" },
   { href: "/pgr", label: "PGR · Assinatura", icon: FileSignature, ator: "ia", descricao: "Validação humana assinada" },
   { href: "/fluxo", label: "Fluxo Human-in-the-Loop", icon: Workflow, ator: "ia", descricao: "Como a parceria opera" },

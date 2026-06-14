@@ -49,11 +49,20 @@ COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=build --chown=nextjs:nodejs /app/public ./public
 
+# Migrations no start: o entrypoint roda scripts/migrate.mjs antes do server.
+# O pacote `postgres` (usado por lib/db.ts) já vem no standalone node_modules,
+# então migrate.mjs resolve `import postgres from "postgres"` em runtime.
+COPY --from=build --chown=nextjs:nodejs /app/scripts/migrate.mjs ./scripts/migrate.mjs
+COPY --from=build --chown=nextjs:nodejs /app/db/migrations ./db/migrations
+COPY --chown=nextjs:nodejs docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
+
 USER nextjs
 EXPOSE 3000
 
 # Healthcheck bate na rota /api/health (servida pelo próprio app).
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-CMD ["node", "server.js"]
+# Entrypoint aplica migrations (idempotente) e então sobe o server.js.
+ENTRYPOINT ["./docker-entrypoint.sh"]

@@ -1,14 +1,27 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Lock, Loader2, ShieldCheck } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { RadarRings } from "@/components/brand/radar-rings";
 
 export default function LoginPage() {
+  // useSearchParams exige Suspense boundary no Next 14 (App Router).
+  return (
+    <Suspense fallback={<LoginForm />}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Mensagem quando a sessão foi revogada por desativação do usuário (guard do
+  // (plataforma)/layout redireciona pra cá com ?desativado=1).
+  const desativado = searchParams.get("desativado") === "1";
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState<string | null>(null);
@@ -50,6 +63,12 @@ export default function LoginPage() {
 
         <h1 className="font-display text-xl font-semibold text-ink">Acesso à plataforma</h1>
         <p className="mb-5 mt-1 text-xs text-ink-muted">Entre com suas credenciais.</p>
+
+        {desativado && (
+          <div className="mb-3 rounded-lg bg-alerta/10 px-3 py-2 text-xs text-alerta ring-1 ring-inset ring-alerta/25">
+            Seu acesso foi encerrado. Fale com o administrador da sua organização.
+          </div>
+        )}
 
         <form onSubmit={entrar} className="space-y-3">
           <div>

@@ -38,6 +38,25 @@ describe.skipIf(!URL_ADMIN)("drps-analise · §7 análise setorizada", () => {
    * controlar os valores exatos). Usa sqlAdmin (sem RLS) — testes não estão
    * exercitando RLS aqui, isso já é coberto em drps.test.ts.
    */
+  /**
+   * Garante (idempotente) uma campanha 'avulso' pra empresa e devolve o id.
+   * Necessário porque drps_resposta.campanha_id é NOT NULL (mig 0023) — este
+   * helper faz INSERT direto (bypassa registrarResposta), então precisa
+   * fornecer a campanha explicitamente.
+   */
+  async function garantirCampanhaAvulso(empresaId: string): Promise<string> {
+    const [row] = await admin`
+      insert into public.drps_campanha
+        (empresa_id, instrumento_id, codigo, titulo, token, ciclo, ativo)
+      values
+        (${empresaId}, ${instrumentoId}, 'avulso', 'Avulso (sem campanha)',
+         ${"tok_avulso_" + empresaId}, 'avulso', true)
+      on conflict (empresa_id, codigo) do update set ativo = true
+      returning id
+    `;
+    return row.id as string;
+  }
+
   async function inserirResposta(
     empresaId: string,
     setor: string,
@@ -45,12 +64,13 @@ describe.skipIf(!URL_ADMIN)("drps-analise · §7 análise setorizada", () => {
     valoresLikert: number, // valor a aplicar em todas as 10 perguntas likert5_inverso
     marcador: string,
   ) {
+    const campanhaId = await garantirCampanhaAvulso(empresaId);
     const [{ id }] = await admin`
       insert into public.drps_resposta
-        (empresa_id, instrumento_id, marcador_anonimo, setor, funcao,
+        (empresa_id, instrumento_id, campanha_id, marcador_anonimo, setor, funcao,
          tempo_empresa, forma_atuacao, canal)
       values
-        (${empresaId}, ${instrumentoId}, ${marcador}, ${setor}, 'Test',
+        (${empresaId}, ${instrumentoId}, ${campanhaId}, ${marcador}, ${setor}, 'Test',
          '1 a 3 anos', ${forma}, 'web')
       returning id
     `;

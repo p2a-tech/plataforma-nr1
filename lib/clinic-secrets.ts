@@ -18,9 +18,19 @@ import { sqlAdmin, dbHabilitado } from "@/lib/db";
  *   1. `clinicas.secret_cifrado` (bytea) — decifrado com `CLINIC_KEK`.
  *   2. `CLINIC_SECRETS_JSON` (env) — fallback durante a transição.
  *
- * Em produção (NODE_ENV=production), se `CLINIC_KEK` não estiver setada, o
- * decifração falha-fechado (return null). Em dev é tolerante para acelerar
- * o ciclo, mas avisa por console.
+ * ── Comportamento quando `CLINIC_KEK` está AUSENTE (corrigido · Onda 7) ──
+ * O comentário antigo afirmava "falha-fechado em produção", mas o código
+ * SEMPRE caía no fallback de env (`CLINIC_SECRETS_JSON`) — independente de
+ * ambiente — quando a KEK faltava. Isso NÃO é fail-closed. Decisão atual:
+ *   - DEV: tolerante. Sem KEK, ignora `secret_cifrado` e usa o env (acelera o
+ *     ciclo). `decifrarSecret` apenas retorna null e avisa por console.
+ *   - PRODUÇÃO: FAIL-CLOSED de verdade. Se uma clínica TEM `secret_cifrado`
+ *     gravado no DB mas a `CLINIC_KEK` não está configurada, NÃO fazemos o
+ *     downgrade silencioso pro env — `lookupSecretAsync` retorna null e loga
+ *     erro. Motivo: cair pro env legado em prod mascara um erro de
+ *     configuração de KEK e pode usar um segredo antigo/rotacionado. Já
+ *     clínicas SEM `secret_cifrado` (ainda 100% em env) seguem usando o env
+ *     normalmente — não há o que falhar-fechar.
  *
  * Layout do bytea cifrado: iv(12) || authTag(16) || ciphertext(N).
  *
@@ -118,18 +128,50 @@ export function decifrarSecret(buf: Buffer | Uint8Array | null | undefined): str
   }
 }
 
-/** Refresh assíncrono: lê `clinicas.secret_cifrado` do DB e popula cache. */
+/**
+ * Refresh assíncrono: lê `clinicas.secret_cifrado` do DB e popula cache.
+ *
+ * Fail-closed em produção (Onda 7): se a clínica TEM `secret_cifrado` mas a
+ * `CLINIC_KEK` está ausente/inválida, NÃO faz downgrade pro env — retorna null
+ * e loga erro. Em dev, segue tolerante (cai pro env).
+ */
 export async function lookupSecretAsync(clinicaId: string): Promise<string | null> {
-  if (dbHabilitado && obterKEK()) {
+  const kek = obterKEK();
+
+  if (dbHabilitado) {
     try {
       const [row] = await sqlAdmin<{ secret_cifrado: Buffer | null }[]>`
         select secret_cifrado from public.clinicas where id = ${clinicaId} limit 1
       `;
       if (row?.secret_cifrado) {
-        const plain = decifrarSecret(row.secret_cifrado);
-        if (plain) {
-          dbCache.set(clinicaId, plain);
-          return plain;
+        // Clínica já migrada (segredo cifrado no DB).
+        if (!kek) {
+          // FAIL-CLOSED em prod: sem KEK não há como decifrar o segredo
+          // canônico — recusar é mais seguro que usar um env legado/rotacionado.
+          if (process.env.NODE_ENV === "production") {
+            console.error(
+              "[clinic-secrets] secret_cifrado presente mas CLINIC_KEK ausente em produção — fail-closed (return null).",
+            );
+            return null;
+          }
+          // DEV: tolerante — segue pro fallback de env abaixo.
+          console.warn(
+            "[clinic-secrets] secret_cifrado presente mas CLINIC_KEK ausente (dev) — caindo pro env.",
+          );
+        } else {
+          const plain = decifrarSecret(row.secret_cifrado);
+          if (plain) {
+            dbCache.set(clinicaId, plain);
+            return plain;
+          }
+          // KEK presente mas decifração falhou (tag inválida etc.). Em prod,
+          // não mascara com env — algo está errado com o segredo/KEK.
+          if (process.env.NODE_ENV === "production") {
+            console.error(
+              "[clinic-secrets] falha ao decifrar secret_cifrado em produção — fail-closed (return null).",
+            );
+            return null;
+          }
         }
       }
     } catch (e) {

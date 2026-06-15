@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Lock,
@@ -16,6 +17,8 @@ import {
   Loader2,
   Trash2,
   Wand2,
+  Video,
+  ArrowRight,
 } from "lucide-react";
 import { Card, CardTitle, PageHeader, Badge } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
@@ -166,6 +169,26 @@ export default function AtendimentoPage() {
           </Badge>
         }
       />
+
+      {/* Atalho para o fluxo ao vivo (vídeo). Não substitui o anexo de transcrição. */}
+      <Link
+        href="/atendimento/ao-vivo"
+        className="group flex items-center gap-4 rounded-2xl border border-humano/25 bg-humano/[0.06] p-4 transition hover:border-humano/40 hover:bg-humano/[0.09]"
+      >
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-humano/15 text-humano">
+          <Video className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="font-display text-sm font-semibold text-ink">
+            Iniciar teleconsulta ao vivo
+          </div>
+          <p className="mt-0.5 text-xs text-ink-muted">
+            Videochamada com o trabalhador, transcrição ao vivo e análise por IA ao encerrar —
+            ou continue anexando a transcrição abaixo.
+          </p>
+        </div>
+        <ArrowRight className="h-4 w-4 shrink-0 text-humano transition group-hover:translate-x-0.5" />
+      </Link>
 
       {analise?.riscoGrave && (
         <div className="flex items-start gap-3 rounded-2xl border border-alerta/40 bg-alerta/10 p-4">

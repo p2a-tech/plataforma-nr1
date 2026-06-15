@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   ShieldCheck,
   CheckCircle2,
@@ -11,6 +12,7 @@ import {
   Cpu,
   HeartHandshake,
   Download,
+  Users,
 } from "lucide-react";
 import { Card, CardTitle, PageHeader, Badge, ProgressBar } from "@/components/ui/primitives";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -22,6 +24,7 @@ import {
   type EventoAuditoria,
 } from "@/lib/mock-data";
 import { getConformidade } from "@/lib/queries";
+import { contarPorSetor } from "@/lib/colaboradores";
 import { pctConformidade, estaConforme } from "@/lib/conformidade-ui";
 import { exigirSessao } from "@/lib/auth";
 import { withEmpresa } from "@/lib/tenant";
@@ -30,9 +33,18 @@ export const dynamic = "force-dynamic";
 
 export default async function ConformidadePage() {
   const sessao = exigirSessao(["sst", "admin"]);
+  const { conformidadeData, porSetorColab } = await withEmpresa(
+    sessao.empresa_id,
+    async () => ({
+      conformidadeData: await getConformidade(),
+      porSetorColab: await contarPorSetor(sessao.empresa_id),
+    }),
+  );
   const { fonte, checklist, eventos: eventosESocial, trilha: trilhaAuditoria } =
-    await withEmpresa(sessao.empresa_id, () => getConformidade());
+    conformidadeData;
   const dadosReais = fonte === "real";
+  const totalColaboradores = porSetorColab.reduce((a, b) => a + b.total, 0);
+  const temColaboradores = totalColaboradores > 0;
 
   const total = checklist.length;
   const okCount = checklist.filter((c) => c.status === "ok").length;
@@ -144,14 +156,54 @@ export default async function ConformidadePage() {
             ))}
           </div>
 
-          {/* Download S-2240 — XML agregado do mês atual (NR-1 psicossocial) */}
-          <a
-            href={`/api/esocial/s2240?periodo=${new Date().toISOString().slice(0, 7)}`}
-            download
-            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-ia/30 bg-ia/10 px-4 py-2.5 text-sm font-medium text-ia transition hover:bg-ia/20"
-          >
-            <Download className="h-4 w-4" /> Baixar S-2240 (XML)
-          </a>
+          {/* Download S-2240 — XML do mês atual (NR-1 psicossocial) */}
+          {(() => {
+            const periodo = new Date().toISOString().slice(0, 7);
+            return (
+              <div className="mt-4 space-y-2.5">
+                <a
+                  href={`/api/esocial/s2240?periodo=${periodo}&modo=agregado`}
+                  download
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-ia/30 bg-ia/10 px-4 py-2.5 text-sm font-medium text-ia transition hover:bg-ia/20"
+                >
+                  <Download className="h-4 w-4" /> Baixar S-2240 agregado (XML)
+                </a>
+                <a
+                  href={`/api/esocial/s2240?periodo=${periodo}&modo=por_cpf`}
+                  download
+                  className={cn(
+                    "inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition",
+                    temColaboradores
+                      ? "border-humano/30 bg-humano/10 text-humano hover:bg-humano/20"
+                      : "border-line/10 bg-fill/5 text-ink-muted hover:text-ink",
+                  )}
+                  title={
+                    temColaboradores
+                      ? `Um evtExpRisco por colaborador ativo (${totalColaboradores})`
+                      : "Sem colaboradores cadastrados — baixará o agregado como fallback"
+                  }
+                >
+                  <Download className="h-4 w-4" /> Baixar S-2240 por CPF (XML)
+                </a>
+
+                {!temColaboradores && (
+                  <p className="flex items-start gap-1.5 text-[11px] leading-relaxed text-humano-soft">
+                    <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+                    Nenhum colaborador cadastrado: o modo por CPF cai no agregado. Cadastre o quadro
+                    para o fan-out real por trabalhador.
+                  </p>
+                )}
+
+                <Link
+                  href="/conformidade/colaboradores"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-line/10 bg-fill/5 px-4 py-2 text-xs font-medium text-ink-muted transition hover:text-ink"
+                >
+                  <Users className="h-3.5 w-3.5" /> Gerir colaboradores
+                  {temColaboradores ? ` (${totalColaboradores})` : ""}
+                </Link>
+              </div>
+            );
+          })()}
         </Card>
       </div>
 

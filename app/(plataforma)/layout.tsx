@@ -4,6 +4,7 @@ import { AppProvider } from "@/lib/app-state";
 import { Shell } from "@/components/layout/shell";
 import { getRadarResumo } from "@/lib/queries";
 import { exigirSessao, isRotaSST, homePorPapel } from "@/lib/auth";
+import { avaliarSessao } from "@/lib/sessao-guard";
 import { withEmpresa } from "@/lib/tenant";
 import { registrarAcesso } from "@/lib/audit-access";
 
@@ -40,6 +41,18 @@ export default async function PlataformaLayout({
 }) {
   // Gate 1: toda a plataforma exige sessão válida (redireciona p/ /login).
   const sessao = exigirSessao();
+
+  // Gate 1.5 (revogação imediata): `exigirSessao` é síncrono e só valida o
+  // HMAC/expiração do cookie — não "sabe" se o admin desativou o usuário no
+  // meio da sessão. Aqui (async, roda em toda página) re-checamos `usuarios.ativo`
+  // com cache TTL (lib/sessao-guard). Se revogado, redirecionamos pro login —
+  // toda rota da plataforma passa por aqui, então o acesso fica efetivamente
+  // bloqueado. (Não dá pra apagar o cookie dentro de um Server Component no
+  // App Router; o cookie residual fica inútil e expira no TTL.) Fail-open por
+  // dentro de `avaliarSessao`: blip de DB NÃO desloga.
+  if ((await avaliarSessao(sessao.email)) === "revogar") {
+    redirect("/login?desativado=1");
+  }
 
   // Gate 2 (RBAC): rotas SST-only (dashboard/compliance org-wide) não podem ser
   // vistas por 'clinica'. O pathname chega via header setado no middleware.

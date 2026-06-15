@@ -1,6 +1,8 @@
 import "server-only";
 import { sql } from "@/lib/db";
 import { getInventarioRiscos } from "@/lib/queries";
+import { listarColaboradores } from "@/lib/colaboradores";
+import type { Risco } from "@/lib/mock-data";
 
 /**
  * Gerador do evento eSocial S-2240 (Condições Ambientais do Trabalho —
@@ -118,19 +120,7 @@ export async function gerarS2240(
 
   const blocosInfoExpRisco = Array.from(porSetor.entries())
     .map(([setor, riscos]) => {
-      const agentes = riscos
-        .map(
-          (r) => `
-        <agNoc>
-          <codAgNoc>09.01.001</codAgNoc>
-          <dscAgNoc>${escXml(`Fator psicossocial — ${r.fonte}. Ação prevista: ${r.acao} (resp.: ${r.responsavel})`)}</dscAgNoc>
-          <tpAval>2</tpAval>
-          <intConc>${escXml(intensidadeLabel(r.severidade, r.probabilidade))}</intConc>
-          <utilizEPC>1</utilizEPC>
-          <utilizEPI>1</utilizEPI>
-        </agNoc>`,
-        )
-        .join("");
+      const agentes = blocosAgNoc(riscos);
       return `
     <infoExpRisco>
       <infoAmb>
@@ -181,4 +171,181 @@ export async function gerarS2240(
 `;
 
   return { xml, quantRiscos: inv.riscos.length, periodo: { ini, fim } };
+}
+
+/* -------------------------------------------------------------------------- */
+/*  S-2240 POR TRABALHADOR (CPF) — fan-out real do perfil de risco do setor   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Constrói os blocos <agNoc> de um setor a partir dos riscos do inventário DRPS.
+ * Reaproveitado pelo modo agregado e pelo modo por-CPF (mesma metodologia).
+ */
+function blocosAgNoc(riscos: Risco[]): string {
+  return riscos
+    .map(
+      (r) => `
+        <agNoc>
+          <codAgNoc>09.01.001</codAgNoc>
+          <dscAgNoc>${escXml(`Fator psicossocial — ${r.fonte}. Ação prevista: ${r.acao} (resp.: ${r.responsavel})`)}</dscAgNoc>
+          <tpAval>2</tpAval>
+          <intConc>${escXml(intensidadeLabel(r.severidade, r.probabilidade))}</intConc>
+          <utilizEPC>1</utilizEPC>
+          <utilizEPI>1</utilizEPI>
+        </agNoc>`,
+    )
+    .join("");
+}
+
+export interface S2240PorTrabalhadorResultado {
+  /** XML com 1 evtExpRisco por colaborador ativo (vazio se modo encadeado). */
+  xml: string;
+  /** Quantidade de eventos evtExpRisco emitidos (= colaboradores ativos). */
+  quantEventos: number;
+  /** Quantos colaboradores ficaram sem perfil de risco (setor sem riscos). */
+  semPerfil: number;
+  periodo: { ini: string; fim: string };
+  /**
+   * Quando não há colaboradores cadastrados, sinaliza que o caller deve cair
+   * no modo agregado. `xml` vem vazio nesse caso.
+   */
+  semColaboradores: boolean;
+}
+
+/**
+ * Gera o XML do S-2240 com fan-out REAL por CPF: para cada colaborador ATIVO,
+ * emite um <evtExpRisco> cujos <agNoc> derivam do perfil de risco do SETOR do
+ * colaborador (inventário DRPS / matriz por setor — getInventarioRiscos).
+ *
+ * METODOLOGIA (comentada no header do XML): a PrevIA é anônima no DRPS; o risco
+ * é mapeado por SETOR e APLICADO ao trabalhador via o quadro de RH (CPF, setor)
+ * cadastrado pela empresa. Isso NÃO liga o CPF a respostas individuais — a
+ * barreira de anonimato/k-anonimato permanece intacta.
+ *
+ * Se NÃO houver colaboradores cadastrados, retorna `semColaboradores: true`
+ * (xml vazio) para o caller encadear no modo agregado (gerarS2240).
+ *
+ * Deve ser chamado DENTRO de withEmpresa(empresaId, ...).
+ */
+export async function gerarS2240PorTrabalhador(
+  empresaId: string,
+  periodo: string,
+): Promise<S2240PorTrabalhadorResultado> {
+  const { ini, fim } = periodoDatas(periodo);
+
+  const [empresa, inv, colaboradores] = await Promise.all([
+    getDadosEmpresa(empresaId),
+    getInventarioRiscos(),
+    // CPF CRU: este é o ÚNICO ponto autorizado a ler o CPF sem máscara, pois o
+    // eSocial exige o CPF real do trabalhador no <cpfTrab>.
+    listarColaboradores(empresaId, { apenasAtivos: true, cpfCru: true }),
+  ]);
+
+  if (colaboradores.length === 0) {
+    return {
+      xml: "",
+      quantEventos: 0,
+      semPerfil: 0,
+      periodo: { ini, fim },
+      semColaboradores: true,
+    };
+  }
+
+  // Perfil de risco por setor (chave de mapeamento setor → riscos).
+  const riscosPorSetor = new Map<string, Risco[]>();
+  for (const r of inv.riscos) {
+    const k = r.setor || "(sem-setor)";
+    const arr = riscosPorSetor.get(k) ?? [];
+    arr.push(r);
+    riscosPorSetor.set(k, arr);
+  }
+
+  const cnpj = soDigitos(empresa.cnpj);
+  const nrInsc = cnpj.slice(0, 8);
+  let semPerfil = 0;
+
+  const eventos = colaboradores
+    .map((c, idx) => {
+      const cpf = soDigitos(c.cpf).padStart(11, "0");
+      const riscos = riscosPorSetor.get(c.setor) ?? [];
+      if (riscos.length === 0) semPerfil++;
+
+      const idEvento = `ID${cnpj.padStart(14, "0")}${ini.replace(/-/g, "")}${String(
+        idx + 1,
+      ).padStart(9, "0")}`;
+      const matricula = c.matricula
+        ? escXml(c.matricula)
+        : `CPF-${cpf}`;
+
+      const agentes =
+        riscos.length > 0
+          ? blocosAgNoc(riscos)
+          : `
+        <!-- Setor "${escXml(c.setor)}" sem riscos psicossociais no inventário DRPS no período. -->`;
+
+      return `
+  <evtExpRisco Id="${escXml(idEvento)}">
+    <ideEvento>
+      <indRetif>1</indRetif>
+      <tpAmb>2</tpAmb>
+      <procEmi>1</procEmi>
+      <verProc>PrevIA-1.0</verProc>
+    </ideEvento>
+    <ideEmpregador>
+      <tpInsc>1</tpInsc>
+      <nrInsc>${escXml(nrInsc)}</nrInsc>
+    </ideEmpregador>
+    <ideVinculo>
+      <cpfTrab>${escXml(cpf)}</cpfTrab>
+      <matricula>${matricula}</matricula>
+    </ideVinculo>
+    <infoExpRiscoAg>
+      <dtIniCondicao>${ini}</dtIniCondicao>
+      <dtFimCondicao>${fim}</dtFimCondicao>
+      <infoExpRisco>
+        <infoAmb>
+          <localAmb>1</localAmb>
+          <dscSetor>${escXml(c.setor)}</dscSetor>
+        </infoAmb>
+        <infoAtiv>
+          <dscAtivDes>${escXml(
+            "Atividades cotidianas do setor com exposição a fatores psicossociais identificados pelo radar PrevIA (escuta ativa + clínica parceira).",
+          )}</dscAtivDes>
+        </infoAtiv>${agentes}
+      </infoExpRisco>
+    </infoExpRiscoAg>
+  </evtExpRisco>`;
+    })
+    .join("");
+
+  const gerado = new Date().toISOString();
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  PrevIA · eventos eSocial S-2240 (exposição a agentes nocivos — camada psicossocial).
+  MODO POR TRABALHADOR (CPF): um <evtExpRisco> por colaborador ATIVO do quadro de RH.
+
+  METODOLOGIA: a PrevIA é ANÔNIMA no DRPS. O perfil de risco é apurado POR SETOR
+  (inventário DRPS / matriz de risco por setor) e APLICADO a cada trabalhador via
+  o setor declarado no quadro de RH (tabela colaborador_registro, separada das
+  respostas anônimas). O CPF NÃO é cruzado com respostas individuais — a barreira
+  de anonimato/k-anonimato permanece intacta. O CPF é PII do empregador, que é o
+  responsável legal por declará-lo no eSocial.
+
+  Empresa: ${escXml(empresa.nome)} (id=${escXml(empresa.id)}) · CNPJ ${escXml(empresa.cnpj ?? "(sem)")}
+  Período: ${ini} → ${fim}
+  Colaboradores ativos: ${colaboradores.length} · Eventos emitidos: ${colaboradores.length}
+  Sem perfil de risco no setor: ${semPerfil}
+  Gerado em: ${gerado}
+-->
+<eSocial xmlns="http://www.esocial.gov.br/schema/evt/evtExpRisco/v_S_01_03_00">${eventos}
+</eSocial>
+`;
+
+  return {
+    xml,
+    quantEventos: colaboradores.length,
+    semPerfil,
+    periodo: { ini, fim },
+    semColaboradores: false,
+  };
 }

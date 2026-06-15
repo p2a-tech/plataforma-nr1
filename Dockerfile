@@ -50,10 +50,13 @@ COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=build --chown=nextjs:nodejs /app/public ./public
 
 # Migrations no start: o entrypoint roda scripts/migrate.mjs antes do server.
-# O pacote `postgres` (usado por lib/db.ts) já vem no standalone node_modules,
-# então migrate.mjs resolve `import postgres from "postgres"` em runtime.
 COPY --from=build --chown=nextjs:nodejs /app/scripts/migrate.mjs ./scripts/migrate.mjs
 COPY --from=build --chown=nextjs:nodejs /app/db/migrations ./db/migrations
+# O Next BUNDLA `postgres` dentro do server compilado (não fica em node_modules),
+# mas o migrate.mjs é um script à parte e precisa resolvê-lo como módulo.
+# `postgres` (porsager/postgres) é zero-dependency, então copiar só essa pasta
+# do estágio deps é suficiente para o `import postgres from "postgres"`.
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules/postgres ./node_modules/postgres
 COPY --chown=nextjs:nodejs docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 

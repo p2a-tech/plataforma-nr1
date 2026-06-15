@@ -21,8 +21,11 @@ build
 .env.*
 !.env.production.example
 
-# Banco de dados local: init/seed e migrations rodam fora da imagem.
-db/
+# Banco de dados local: init/seed ficam fora da imagem, MAS as migrations
+# entram (o entrypoint roda scripts/migrate.mjs no start). db/* exclui os
+# filhos diretos; !db/migrations re-inclui só a pasta de migrations.
+db/*
+!db/migrations
 
 # Docs e infra que não fazem parte do runtime do app.
 *.md
@@ -31,7 +34,9 @@ Dockerfile
 docker-compose.yml
 docker-compose.prod.yml
 Caddyfile
-scripts/
+# scripts/* exclui os scripts locais, mas migrate.mjs entra (roda no entrypoint).
+scripts/*
+!scripts/migrate.mjs
 
 # Plataformas externas / SO.
 .vercel

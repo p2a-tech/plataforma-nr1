@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
+import { useApp, tourRotas } from "@/lib/app-state";
 import { cn } from "@/lib/utils";
 
 export interface UsuarioSessao {
@@ -23,12 +24,15 @@ export function Shell({
   usuario?: UsuarioSessao;
 }) {
   const [menuAberto, setMenuAberto] = useState(false);
+  const { apresentando, progresso } = useApp();
   const pathname = usePathname();
 
   // Fecha o drawer ao trocar de rota
   useEffect(() => {
     setMenuAberto(false);
   }, [pathname]);
+
+  const passoTour = tourRotas.findIndex((r) => r === pathname);
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -59,6 +63,21 @@ export function Shell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         <Header onOpenMenu={() => setMenuAberto(true)} usuario={usuario} />
+
+        {/* Barra do modo apresentação */}
+        {apresentando && (
+          <div className="relative h-1 w-full bg-fill/5">
+            <div
+              className="h-full bg-gradient-to-r from-ia to-humano transition-all duration-100 ease-linear"
+              style={{ width: `${progresso}%` }}
+            />
+            {passoTour >= 0 && (
+              <div className="absolute right-3 top-2 rounded-full bg-navy-panel px-2.5 py-1 text-[11px] text-ink-muted ring-1 ring-line/10">
+                Tour · tela {passoTour + 1} de {tourRotas.length}
+              </div>
+            )}
+          </div>
+        )}
 
         <main className={cn("flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8")}>
           <div key={pathname} className="mx-auto max-w-7xl animate-fade-up">

@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, ChevronDown, Sun, Moon, LogOut } from "lucide-react";
+import { Menu, Play, Square, ChevronDown, Sun, Moon, LogOut } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useApp } from "@/lib/app-state";
 import { useTheme } from "@/lib/theme";
 import { navItems } from "@/components/layout/nav";
 import type { UsuarioSessao } from "@/components/layout/shell";
@@ -25,6 +27,7 @@ export function Header({
   onOpenMenu: () => void;
   usuario?: UsuarioSessao;
 }) {
+  const { apresentando, toggleApresentacao } = useApp();
   const { tema, toggleTema } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
@@ -66,6 +69,19 @@ export function Header({
       </div>
 
       <div className="ml-auto flex items-center gap-2">
+        <button
+          onClick={toggleApresentacao}
+          className={cn(
+            "flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-all",
+            apresentando
+              ? "bg-humano text-white shadow-glowHuman"
+              : "bg-ia/15 text-ia ring-1 ring-inset ring-ia/25 hover:bg-ia/25",
+          )}
+        >
+          {apresentando ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+          <span className="hidden sm:inline">{apresentando ? "Parar tour" : "Modo apresentação"}</span>
+        </button>
+
         <button
           onClick={toggleTema}
           className="grid h-9 w-9 place-items-center rounded-lg text-ink-muted ring-1 ring-inset ring-line/10 transition-colors hover:bg-fill/5 hover:text-ink"

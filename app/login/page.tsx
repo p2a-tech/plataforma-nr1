@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ArrowRight, Lock, Loader2, ShieldCheck } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { RadarRings } from "@/components/brand/radar-rings";
@@ -86,6 +87,12 @@ export default function LoginPage() {
             {!carregando && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />}
           </button>
         </form>
+
+        <div className="mt-4 text-center">
+          <Link href="/esqueci-senha" className="text-xs text-ink-muted transition hover:text-ink">
+            Esqueci minha senha
+          </Link>
+        </div>
 
         <div className="mt-6 flex items-center justify-center gap-2 text-xs text-ink-muted">
           <ShieldCheck className="h-3.5 w-3.5 text-ok" />

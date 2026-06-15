@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Card, CardTitle, PageHeader, Badge } from "@/components/ui/primitives";
+import { EmptyStateInline } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import { Database, FlaskConical } from "lucide-react";
 import { empresa, type Risco } from "@/lib/mock-data";
@@ -221,19 +222,27 @@ export default async function RiscosPage() {
             Plano de ação por risco
           </CardTitle>
 
+          {riscos.length === 0 ? (
+            <EmptyStateInline
+              icon={<ListChecks className="h-6 w-6" />}
+              titulo="Nenhum risco mapeado ainda"
+              descricao="Os riscos psicossociais são derivados dos atendimentos e dos pulsos do Radar (NR-1). Assim que houver volume suficiente por cluster, o inventário e o plano de ação aparecem aqui."
+            />
+          ) : (
+          <>
           {/* Desktop: tabela real */}
           <div className="hidden overflow-x-auto md:block">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-line/10 text-left text-xs uppercase tracking-wider text-ink-muted">
-                  <th className="px-2 py-2 font-medium">ID</th>
-                  <th className="px-2 py-2 font-medium">Fonte (organização do trabalho)</th>
-                  <th className="px-2 py-2 font-medium">Setor/Cluster</th>
-                  <th className="px-2 py-2 font-medium">Nível</th>
-                  <th className="px-2 py-2 font-medium">Ação</th>
-                  <th className="px-2 py-2 font-medium">Responsável</th>
-                  <th className="px-2 py-2 font-medium">Prazo</th>
-                  <th className="px-2 py-2 font-medium">Status</th>
+                  <th scope="col" className="px-2 py-2 font-medium">ID</th>
+                  <th scope="col" className="px-2 py-2 font-medium">Fonte (organização do trabalho)</th>
+                  <th scope="col" className="px-2 py-2 font-medium">Setor/Cluster</th>
+                  <th scope="col" className="px-2 py-2 font-medium">Nível</th>
+                  <th scope="col" className="px-2 py-2 font-medium">Ação</th>
+                  <th scope="col" className="px-2 py-2 font-medium">Responsável</th>
+                  <th scope="col" className="px-2 py-2 font-medium">Prazo</th>
+                  <th scope="col" className="px-2 py-2 font-medium">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -307,6 +316,8 @@ export default async function RiscosPage() {
               );
             })}
           </div>
+          </>
+          )}
         </Card>
       </div>
     </div>

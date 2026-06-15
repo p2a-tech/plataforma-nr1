@@ -6,6 +6,12 @@ import bcrypt from "bcryptjs";
 import { sqlAdmin as sql, dbHabilitado } from "@/lib/db";
 import { assinarSessao, homePorPapel, COOKIE, MAX_AGE, type Papel } from "@/lib/auth";
 import { rateLimit, clientIp, rateLimitKey } from "@/lib/rate-limit";
+import {
+  hashLogin,
+  verificarLockout,
+  registrarTentativa,
+  limparFalhas,
+} from "@/lib/login-lockout";
 
 /**
  * Login genérico (qualquer papel: sst | clinica | admin).
@@ -44,6 +50,22 @@ export async function loginHandler(req: NextRequest) {
   }
   const { email, senha } = parsed.data;
 
+  // ── Lockout anti-brute-force (D) ────────────────────────────────────────────
+  // Conta falhas recentes (15 min) por email OU IP ANTES de validar a senha.
+  // PII nunca em claro: só sha256(valor + sal).
+  const emailHash = hashLogin(email);
+  const ipHash = hashLogin(ip);
+  const lockout = await verificarLockout(emailHash, ipHash);
+  if (lockout.bloqueado) {
+    return NextResponse.json(
+      { erro: "muitas_tentativas" },
+      {
+        status: 429,
+        headers: { "retry-after": String(lockout.retryAfterS) },
+      },
+    );
+  }
+
   const [user] = await sql<
     {
       email: string;
@@ -52,9 +74,10 @@ export async function loginHandler(req: NextRequest) {
       empresa_id: string;
       nome: string | null;
       papel: Papel;
+      ativo: boolean;
     }[]
   >`
-    select email, senha_hash, clinica_id, empresa_id, nome, papel
+    select email, senha_hash, clinica_id, empresa_id, nome, papel, ativo
     from public.usuarios
     where lower(email) = lower(${email})
     limit 1
@@ -64,8 +87,21 @@ export async function loginHandler(req: NextRequest) {
   const hash = user?.senha_hash ?? "$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinv";
   const ok = await bcrypt.compare(senha, hash);
   if (!user || !ok) {
+    // Registra a falha para o lockout (best-effort).
+    await registrarTentativa(emailHash, ipHash, false);
     return NextResponse.json({ erro: "E-mail ou senha incorretos" }, { status: 401 });
   }
+
+  // Controle de acesso: usuário desativado pelo admin NÃO loga (mesmo com
+  // a senha correta). Checado APÓS o bcrypt, então não cria oracle de
+  // existência. Não conta como falha de lockout (credencial estava certa).
+  if (user.ativo === false) {
+    return NextResponse.json({ erro: "conta_desativada" }, { status: 403 });
+  }
+
+  // Sucesso: registra e zera as falhas recentes daquele email.
+  await registrarTentativa(emailHash, ipHash, true);
+  await limparFalhas(emailHash);
 
   const token = assinarSessao({
     papel: user.papel,

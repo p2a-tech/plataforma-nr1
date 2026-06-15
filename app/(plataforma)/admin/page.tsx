@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   Building2,
   Users,
@@ -8,7 +9,8 @@ import {
   Database,
   FlaskConical,
   Clock,
-  Lock,
+  Inbox,
+  ArrowRight,
 } from "lucide-react";
 import { Card, CardTitle, PageHeader, Badge } from "@/components/ui/primitives";
 import { exigirSessao } from "@/lib/auth";
@@ -115,7 +117,7 @@ export default async function AdminPage() {
     <div className="space-y-6">
       <PageHeader
         titulo="Console Admin"
-        descricao="Visão geral operacional da plataforma PrevIA — tenants, usuários e atividade. Somente leitura nesta versão."
+        descricao="Visão geral operacional da plataforma PrevIA — tenants, usuários e atividade. Gerencie empresas e usuários nos atalhos abaixo."
         badge={
           semDb ? (
             <Badge tone="ambar">
@@ -134,6 +136,28 @@ export default async function AdminPage() {
           </span>
         }
       />
+
+      {/* Atalhos de gestão (onboarding) */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <GestaoLink
+          href="/admin/empresas"
+          icon={<Building2 className="h-5 w-5" />}
+          titulo="Empresas"
+          descricao="Cadastrar, editar e ativar/desativar tenants."
+        />
+        <GestaoLink
+          href="/admin/usuarios"
+          icon={<Users className="h-5 w-5" />}
+          titulo="Usuários"
+          descricao="Criar acessos, definir papel e redefinir senha."
+        />
+        <GestaoLink
+          href="/admin/leads"
+          icon={<Inbox className="h-5 w-5" />}
+          titulo="Leads /nr1"
+          descricao="Pipeline de pré-venda da landing page."
+        />
+      </div>
 
       {/* Cards de métrica */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
@@ -240,15 +264,37 @@ export default async function AdminPage() {
         </Card>
       </div>
 
-      {/* Nota de roadmap */}
-      <Card className="flex items-start gap-3 border-ia/15 bg-ia/[0.04] p-4">
-        <Lock className="mt-0.5 h-4 w-4 shrink-0 text-ia" />
-        <div className="text-sm text-ink/80">
-          <span className="font-medium text-ink">Somente leitura.</span> A gestão de clínicas
-          e usuários (criar, editar, suspender) está no roadmap. Esta versão entrega a visão
-          geral operacional da plataforma.
-        </div>
-      </Card>
     </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Atalho de gestão (card-link para sub-áreas do admin)                        */
+/* -------------------------------------------------------------------------- */
+function GestaoLink({
+  href,
+  icon,
+  titulo,
+  descricao,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  titulo: string;
+  descricao: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group panel flex items-start justify-between gap-3 p-4 transition-colors hover:border-ia/30 hover:bg-ia/[0.04]"
+    >
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 text-ia">{icon}</span>
+        <div>
+          <div className="font-display text-base font-semibold text-ink">{titulo}</div>
+          <p className="mt-0.5 text-xs text-ink-muted">{descricao}</p>
+        </div>
+      </div>
+      <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-ink-muted transition-transform group-hover:translate-x-0.5 group-hover:text-ia" />
+    </Link>
   );
 }

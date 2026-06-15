@@ -95,6 +95,12 @@ export default function LoginClinicaPage() {
           </button>
         </form>
 
+        <div className="mt-4 text-center">
+          <Link href="/esqueci-senha" className="text-xs text-ink-muted transition hover:text-ink">
+            Esqueci minha senha
+          </Link>
+        </div>
+
         <div className="mt-4 rounded-lg border border-line/10 bg-fill/[0.02] px-3 py-2 text-[11px] text-ink-muted">
           Demo: <span className="text-ink/80">clinica@translog.com.br</span> · senha{" "}
           <span className="text-ink/80">previa123</span>

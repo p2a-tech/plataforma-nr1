@@ -13,6 +13,7 @@ import {
   Download,
 } from "lucide-react";
 import { Card, CardTitle, PageHeader, Badge, ProgressBar } from "@/components/ui/primitives";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import {
   empresa,
@@ -21,6 +22,7 @@ import {
   type EventoAuditoria,
 } from "@/lib/mock-data";
 import { getConformidade } from "@/lib/queries";
+import { pctConformidade, estaConforme } from "@/lib/conformidade-ui";
 import { exigirSessao } from "@/lib/auth";
 import { withEmpresa } from "@/lib/tenant";
 
@@ -36,8 +38,10 @@ export default async function ConformidadePage() {
   const okCount = checklist.filter((c) => c.status === "ok").length;
   const pendentes = checklist.filter((c) => c.status === "pendente").length;
   const atencoes = checklist.filter((c) => c.status === "atencao").length;
-  const conformidade = Math.round((okCount / total) * 100);
-  const conforme = pendentes === 0 && atencoes === 0;
+  // Guarda contra divisão por zero (banco vazio) — evita exibir "NaN%".
+  const conformidade = pctConformidade(okCount, total);
+  const conforme = estaConforme(total, pendentes, atencoes);
+  const semConformidade = total === 0;
 
   const enviados = eventosESocial.filter((e) => e.status === "enviado").length;
   const processando = eventosESocial.filter((e) => e.status === "processando").length;
@@ -67,6 +71,14 @@ export default async function ConformidadePage() {
         }
       />
 
+      {semConformidade ? (
+        <EmptyState
+          icon={<ShieldCheck className="h-7 w-7" />}
+          titulo="Sem dados de conformidade ainda"
+          descricao="O checklist NR-1, os eventos do eSocial e a trilha de auditoria são montados a partir dos atendimentos registrados. Assim que houver evidências no banco, esta tela passa a refletir a conformidade real da empresa."
+        />
+      ) : (
+      <>
       {/* Faixa de resumo */}
       <Card>
         <div className="grid gap-6 lg:grid-cols-5 lg:items-center">
@@ -176,6 +188,8 @@ export default async function ConformidadePage() {
           ))}
         </ol>
       </Card>
+      </>
+      )}
     </div>
   );
 }

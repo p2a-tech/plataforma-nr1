@@ -36,6 +36,36 @@ body {
   color: rgb(var(--ink));
 }
 
+/* ==========================================================================
+   Acessibilidade (E10): foco visível por teclado em TODO elemento interativo.
+   Usa :focus-visible (só teclado, não mouse) — anel ciar (ia) com offset.
+   Aplicado globalmente para não depender de cada botão/link declarar o ring.
+   Elementos que já definem o próprio focus-visible (toggles) continuam mandando.
+   ========================================================================== */
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible,
+summary:focus-visible {
+  outline: 2px solid rgb(var(--ink) / 0); /* mantém box-shadow como anel real */
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 2px rgb(var(--bg)),
+    0 0 0 4px rgba(0, 194, 209, 0.6);
+  border-radius: 0.5rem;
+}
+
+/* Respeita quem prefere menos movimento: zera animações decorativas. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
 /* Scrollbar discreta, adaptada ao tema */
 * {
   scrollbar-width: thin;

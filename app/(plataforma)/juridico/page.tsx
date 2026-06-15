@@ -441,12 +441,12 @@ export default async function JuridicoPage() {
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-line/10 text-left text-xs uppercase tracking-wider text-ink-muted">
-                <th className="px-2 py-2 font-medium">Obrigação</th>
-                <th className="px-2 py-2 font-medium">Norma</th>
-                <th className="px-2 py-2 font-medium">Prazo</th>
-                <th className="px-2 py-2 font-medium">Responsável</th>
-                <th className="px-2 py-2 font-medium">Status</th>
-                <th className="px-2 py-2 font-medium">Ação</th>
+                <th scope="col" className="px-2 py-2 font-medium">Obrigação</th>
+                <th scope="col" className="px-2 py-2 font-medium">Norma</th>
+                <th scope="col" className="px-2 py-2 font-medium">Prazo</th>
+                <th scope="col" className="px-2 py-2 font-medium">Responsável</th>
+                <th scope="col" className="px-2 py-2 font-medium">Status</th>
+                <th scope="col" className="px-2 py-2 font-medium">Ação</th>
               </tr>
             </thead>
             <tbody>
@@ -501,12 +501,12 @@ export default async function JuridicoPage() {
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-line/10 text-left text-xs uppercase tracking-wider text-ink-muted">
-                <th className="px-2 py-2 font-medium">Finalidade</th>
-                <th className="px-2 py-2 font-medium">Base legal</th>
-                <th className="px-2 py-2 font-medium">Artigo</th>
-                <th className="px-2 py-2 font-medium">Retenção</th>
-                <th className="px-2 py-2 font-medium">Risco</th>
-                <th className="px-2 py-2 font-medium">Controles</th>
+                <th scope="col" className="px-2 py-2 font-medium">Finalidade</th>
+                <th scope="col" className="px-2 py-2 font-medium">Base legal</th>
+                <th scope="col" className="px-2 py-2 font-medium">Artigo</th>
+                <th scope="col" className="px-2 py-2 font-medium">Retenção</th>
+                <th scope="col" className="px-2 py-2 font-medium">Risco</th>
+                <th scope="col" className="px-2 py-2 font-medium">Controles</th>
               </tr>
             </thead>
             <tbody>

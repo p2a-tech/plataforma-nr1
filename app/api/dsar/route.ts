@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createHash } from "node:crypto";
 import { sqlAdmin, dbHabilitado } from "@/lib/db";
+import { notificar } from "@/lib/notify";
 
 /**
  * Captura PÚBLICA de pedidos DSAR (LGPD arts. 18-22) — direito do titular
@@ -112,6 +113,17 @@ export async function POST(req: NextRequest) {
       tipo: d.tipo,
       email_dominio: dominioDoEmail(d.email_titular),
       id: row.id,
+    });
+    // Notifica o operador/DPO — sem PII (só tipo, domínio e id). O pedido nasce
+    // sem empresa_id (triagem). notificar() é fail-safe e nunca lança.
+    await notificar({
+      tipo: "dsar",
+      empresa_id: null,
+      titulo: `Novo pedido DSAR: ${d.tipo}`,
+      corpo:
+        `Pedido de titular (LGPD) recebido — tipo "${d.tipo}", ` +
+        `domínio do solicitante: ${dominioDoEmail(d.email_titular)}. ` +
+        `Triagem pendente. Ref.: ${row.id}.`,
     });
     return NextResponse.json({ ok: true, id: row.id }, { status: 201 });
   } catch (err) {

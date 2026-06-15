@@ -13,6 +13,7 @@ import {
   Gauge,
 } from "lucide-react";
 import { Card, CardTitle, PageHeader, Badge, ProgressBar } from "@/components/ui/primitives";
+import { EmptyState } from "@/components/ui/empty-state";
 import { RespostasBarChart } from "@/components/charts";
 import { cn } from "@/lib/utils";
 import { conversaPulso, adesaoCanais, empresa, type BalaoChat } from "@/lib/mock-data";
@@ -88,6 +89,13 @@ export default async function EscutaPage() {
 
         {/* Coluna direita: métricas + gráficos reais */}
         <div className="space-y-6 lg:col-span-7">
+          {!real && (
+            <EmptyState
+              icon={<Radio className="h-7 w-7" />}
+              titulo="Sem pulsos ainda"
+              descricao="Quando os trabalhadores responderem aos micro-pulsos do Radar, as métricas de adesão, os sinais por setor e os fatores mais citados aparecem aqui — sempre agregados por cluster (k ≥ 7)."
+            />
+          )}
           <div className="grid grid-cols-2 gap-4">
             {metricas.map((m) => (
               <Card key={m.id} className="p-4">

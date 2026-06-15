@@ -18,7 +18,11 @@ function nivelRotulo(v: number) {
 export function Heatmap({ linhas = heatmapMock }: { linhas?: LinhaHeatmap[] }) {
   return (
     <div className="overflow-x-auto">
-      <div className="min-w-[520px]">
+      <div
+        className="min-w-[520px]"
+        role="img"
+        aria-label="Mapa de calor de risco psicossocial por setor e turno. Passe o cursor em cada célula para ver o nível e o valor."
+      >
         {/* Cabeçalho de turnos */}
         <div className="grid grid-cols-[150px_repeat(4,1fr)] gap-1.5">
           <div />

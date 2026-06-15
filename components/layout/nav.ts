@@ -14,6 +14,8 @@ import {
   Inbox,
   BarChart3,
   Upload,
+  Building2,
+  UserCog,
   type LucideIcon,
 } from "lucide-react";
 
@@ -43,4 +45,6 @@ export const navItems: NavItem[] = [
   { href: "/juridico", label: "Compliance Jurídico", icon: Scale, ator: "ia", descricao: "Base legal · DPIA · evidências" },
   { href: "/governanca", label: "Governança & LGPD", icon: ShieldCheck, ator: "ia", descricao: "Privacidade e ética" },
   { href: "/admin/leads", label: "Leads /nr1", icon: Inbox, ator: "ia", descricao: "Pré-venda /nr1" },
+  { href: "/admin/empresas", label: "Empresas", icon: Building2, ator: "ia", descricao: "Onboarding de clientes (tenants)" },
+  { href: "/admin/usuarios", label: "Usuários", icon: UserCog, ator: "ia", descricao: "Gestão de acessos por papel" },
 ];

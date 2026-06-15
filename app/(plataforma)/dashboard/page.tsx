@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Card, CardTitle, PageHeader, Badge, ProgressBar } from "@/components/ui/primitives";
+import { EmptyState } from "@/components/ui/empty-state";
 import { RiscoAdesaoChart, Sparkline } from "@/components/charts";
 import { Heatmap } from "@/components/heatmap";
 import { corSeveridade, empresa } from "@/lib/mock-data";
@@ -293,22 +294,19 @@ function MetricCard({ m }: { m: DashMetric }) {
 
 function EstadoVazio() {
   return (
-    <Card className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-      <FlaskConical className="h-8 w-8 text-ink-muted" />
-      <div>
-        <div className="font-display text-lg font-semibold text-ink">Banco de dados vazio</div>
-        <p className="mx-auto mt-1 max-w-md text-sm text-ink-muted">
-          O Dashboard reflete 100% dados reais. Gere dados pelo Radar (micro-pulsos) ou pelo
-          atendimento da clínica para popular as métricas.
-        </p>
-      </div>
-      <div className="mt-1 flex flex-wrap items-center justify-center gap-2 text-xs text-ink-muted">
-        <code className="rounded-md bg-fill/5 px-2 py-1">node scripts/simular-pulsos.mjs 40</code>
-        <span>ou</span>
-        <Link href="/atendimento" className="text-ia hover:underline">
-          registrar um atendimento
-        </Link>
-      </div>
-    </Card>
+    <EmptyState
+      icon={<FlaskConical className="h-7 w-7" />}
+      titulo="Sem dados ainda"
+      descricao="O Dashboard reflete 100% dados reais. Gere dados pelo Radar (micro-pulsos) ou pelo atendimento da clínica para popular as métricas, o mapa de calor e a série temporal."
+      acao={
+        <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-ink-muted">
+          <code className="rounded-md bg-fill/5 px-2 py-1">node scripts/simular-pulsos.mjs 40</code>
+          <span>ou</span>
+          <Link href="/atendimento" className="text-ia hover:underline">
+            registrar um atendimento
+          </Link>
+        </div>
+      }
+    />
   );
 }

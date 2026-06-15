@@ -32,6 +32,7 @@ import {
 import { sqlAdmin, dbHabilitado } from "@/lib/db";
 import { lookupSecretAsync, fingerprint } from "@/lib/clinic-secrets";
 import { criarEvento } from "@/lib/risco-grave";
+import { notificar } from "@/lib/notify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -165,15 +166,18 @@ export async function POST(req: NextRequest) {
       notas: d.notas,
     });
 
-    // Notificação ao DPO — por ora apenas log estruturado. Hook real vai entrar
-    // como envio para canal seguro configurado por empresa.
-    console.log(
-      "[risco-grave] notificar DPO",
-      empresaId,
-      d.tipo,
-      `severidade=${d.severidade}`,
-      `evento_id=${evento.id}`,
-    );
+    // Notificação ao DPO/SST — persiste na trilha e despacha pros canais
+    // configurados (e-mail/Slack). NUNCA contém PII (só tipo/severidade/id).
+    // notificar() é fail-safe: não lança, não derruba o registro do evento.
+    await notificar({
+      tipo: "risco_grave",
+      empresa_id: empresaId,
+      titulo: `Risco grave/iminente: ${d.tipo}`,
+      corpo:
+        `Evento de risco grave registrado (severidade ${d.severidade}/5). ` +
+        `Acesse o painel de Riscos para acompanhar e encerrar. ` +
+        `Ref. evento: ${evento.id}.`,
+    });
 
     return NextResponse.json(
       { ok: true, id: evento.id, status: evento.status, criado_em: evento.criado_em },

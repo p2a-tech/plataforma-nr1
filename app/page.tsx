@@ -6,20 +6,14 @@ import { ArrowRight, ShieldCheck, Brain, HeartPulse, Lock, Sun, Moon, Loader2 } 
 import { Logo } from "@/components/brand/logo";
 import { P2ALogo } from "@/components/brand/p2a-logo";
 import { useTheme } from "@/lib/theme";
-import { profiles, brand, type ProfileId } from "@/lib/mock-data";
+import { brand } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
-
-// E-mails demo por perfil (senha previa123). Login real ao entrar.
-const DEMO_EMAIL: Record<ProfileId, string> = {
-  sst: "gestor@translog.com.br",
-  clinica: "clinica@translog.com.br",
-  admin: "admin@p2a.tech",
-};
 
 export default function LoginPage() {
   const router = useRouter();
   const { tema, toggleTema } = useTheme();
-  const [perfil, setPerfil] = useState<ProfileId>("sst");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -27,11 +21,10 @@ export default function LoginPage() {
     setErro(null);
     setCarregando(true);
     try {
-      window.localStorage.setItem("previa:profile", perfil);
       const r = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email: DEMO_EMAIL[perfil], senha: "previa123" }),
+        body: JSON.stringify({ email, senha }),
       });
       const j = await r.json();
       if (!r.ok) {
@@ -87,7 +80,6 @@ export default function LoginPage() {
         <div className="relative flex items-center gap-2 text-xs text-ink-muted">
           <span>© {new Date().getFullYear()} {brand.name} — uma solução</span>
           <P2ALogo size="xs" />
-          <span>· preview de demonstração.</span>
         </div>
       </div>
 
@@ -103,13 +95,16 @@ export default function LoginPage() {
             <p className="mt-1 text-sm text-ink-muted">Entre para acessar o painel da plataforma.</p>
           </div>
 
-          {/* Campos ilustrativos */}
+          {/* Credenciais */}
           <div className="space-y-3">
             <div>
               <label className="mb-1.5 block text-xs font-medium text-ink-muted">E-mail corporativo</label>
               <input
                 type="email"
-                defaultValue="marina.alves@translog.com.br"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && entrar()}
+                placeholder="voce@empresa.com.br"
                 className="w-full rounded-xl border border-line/8 bg-fill/[0.03] px-3.5 py-2.5 text-sm text-ink outline-none transition focus:border-ia/50 focus:ring-2 focus:ring-ia/20"
               />
             </div>
@@ -117,35 +112,12 @@ export default function LoginPage() {
               <label className="mb-1.5 block text-xs font-medium text-ink-muted">Senha</label>
               <input
                 type="password"
-                defaultValue="demonstracao"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && entrar()}
+                placeholder="••••••••"
                 className="w-full rounded-xl border border-line/8 bg-fill/[0.03] px-3.5 py-2.5 text-sm text-ink outline-none transition focus:border-ia/50 focus:ring-2 focus:ring-ia/20"
               />
-            </div>
-          </div>
-
-          {/* Seletor de perfil */}
-          <div className="mt-5">
-            <label className="mb-2 block text-xs font-medium text-ink-muted">Entrar como (demo)</label>
-            <div className="grid grid-cols-3 gap-2">
-              {profiles.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => setPerfil(p.id)}
-                  className={cn(
-                    "rounded-xl border px-2 py-2.5 text-center transition-all",
-                    perfil === p.id
-                      ? "border-ia/40 bg-ia/10 text-ink shadow-glow"
-                      : "border-line/8 bg-fill/[0.02] text-ink-muted hover:border-line/15 hover:text-ink",
-                  )}
-                >
-                  <span className="mx-auto mb-1 grid h-8 w-8 place-items-center rounded-lg bg-fill/5 text-xs font-semibold">
-                    {p.iniciais}
-                  </span>
-                  <span className="block text-[11px] font-medium leading-tight">
-                    {p.papel.split(" · ")[0]}
-                  </span>
-                </button>
-              ))}
             </div>
           </div>
 
@@ -167,7 +139,7 @@ export default function LoginPage() {
 
           <div className="mt-6 flex items-center justify-center gap-2 text-xs text-ink-muted">
             <ShieldCheck className="h-3.5 w-3.5 text-ok" />
-            Ambiente de demonstração — senha demo: previa123
+            Sessão segura (HMAC) · LGPD
           </div>
         </div>
       </div>

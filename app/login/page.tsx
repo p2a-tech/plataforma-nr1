@@ -5,18 +5,11 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Lock, Loader2, ShieldCheck } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { RadarRings } from "@/components/brand/radar-rings";
-import { cn } from "@/lib/utils";
-
-const DEMOS = [
-  { papel: "sst", rotulo: "Gestor SST", email: "gestor@translog.com.br" },
-  { papel: "clinica", rotulo: "Clínica", email: "clinica@translog.com.br" },
-  { papel: "admin", rotulo: "Admin", email: "admin@p2a.tech" },
-] as const;
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("gestor@translog.com.br");
-  const [senha, setSenha] = useState("previa123");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
 
@@ -93,31 +86,6 @@ export default function LoginPage() {
             {!carregando && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />}
           </button>
         </form>
-
-        {/* Atalhos de demonstração */}
-        <div className="mt-4">
-          <div className="mb-2 text-[11px] uppercase tracking-wider text-ink-muted">Entrar como (demo)</div>
-          <div className="grid grid-cols-3 gap-2">
-            {DEMOS.map((d) => (
-              <button
-                key={d.papel}
-                onClick={() => {
-                  setEmail(d.email);
-                  setSenha("previa123");
-                }}
-                className={cn(
-                  "rounded-lg border px-2 py-2 text-center text-xs transition",
-                  email === d.email
-                    ? "border-ia/40 bg-ia/10 text-ink"
-                    : "border-line/10 bg-fill/[0.02] text-ink-muted hover:text-ink",
-                )}
-              >
-                {d.rotulo}
-              </button>
-            ))}
-          </div>
-          <div className="mt-2 text-[11px] text-ink-muted">Senha demo: previa123</div>
-        </div>
 
         <div className="mt-6 flex items-center justify-center gap-2 text-xs text-ink-muted">
           <ShieldCheck className="h-3.5 w-3.5 text-ok" />

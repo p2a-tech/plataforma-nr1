@@ -21,13 +21,36 @@ const CSP = [
   "object-src 'none'",
 ].join("; ");
 
+/**
+ * Hosts de marketing (landing de vendas /nr1). Na raiz desses hosts servimos a
+ * landing diretamente (URL limpa pro tráfego pago), sem expor /nr1. Configurável
+ * via env MARKETING_HOSTS (lista separada por vírgula); default cobre o subdomínio.
+ */
+const MARKETING_HOSTS = (process.env.MARKETING_HOSTS ?? "nr1.p2atech.com.br")
+  .split(",")
+  .map((h) => h.trim().toLowerCase())
+  .filter(Boolean);
+
 export function middleware(req: NextRequest) {
+  const host = (req.headers.get("host") ?? "").toLowerCase().split(":")[0];
+  const ehMarketing = MARKETING_HOSTS.includes(host);
+
   // Propaga o pathname para os Server Components (layouts) via header de request,
   // permitindo gate de RBAC por rota sem reestruturar pastas. (E6 RBAC)
   const requestHeaders = new Headers(req.headers);
-  requestHeaders.set("x-pathname", req.nextUrl.pathname);
 
-  const res = NextResponse.next({ request: { headers: requestHeaders } });
+  let res: NextResponse;
+  if (ehMarketing && req.nextUrl.pathname === "/") {
+    // Raiz do host de marketing → serve a landing /nr1 (rewrite, URL permanece /).
+    const url = req.nextUrl.clone();
+    url.pathname = "/nr1";
+    requestHeaders.set("x-pathname", "/nr1");
+    res = NextResponse.rewrite(url, { request: { headers: requestHeaders } });
+  } else {
+    requestHeaders.set("x-pathname", req.nextUrl.pathname);
+    res = NextResponse.next({ request: { headers: requestHeaders } });
+  }
+
   res.headers.set("Content-Security-Policy", CSP);
   res.headers.set("X-Frame-Options", "DENY");
   res.headers.set("X-Content-Type-Options", "nosniff");

@@ -8,20 +8,26 @@ import { Logo } from "@/components/brand/logo";
 import { RadarRings } from "@/components/brand/radar-rings";
 
 export default function LoginPage() {
-  // useSearchParams exige Suspense boundary no Next 14 (App Router).
+  return <LoginForm />;
+}
+
+/**
+ * Aviso de sessão revogada (?desativado=1). useSearchParams exige um Suspense
+ * boundary no Next 14 (App Router) — e o fallback NÃO pode usar useSearchParams,
+ * por isso o uso fica isolado neste componente com fallback null.
+ */
+function AvisoDesativado() {
+  const searchParams = useSearchParams();
+  if (searchParams.get("desativado") !== "1") return null;
   return (
-    <Suspense fallback={<LoginForm />}>
-      <LoginForm />
-    </Suspense>
+    <div className="mb-3 rounded-lg bg-alerta/10 px-3 py-2 text-xs text-alerta ring-1 ring-inset ring-alerta/25">
+      Seu acesso foi encerrado. Fale com o administrador da sua organização.
+    </div>
   );
 }
 
 function LoginForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  // Mensagem quando a sessão foi revogada por desativação do usuário (guard do
-  // (plataforma)/layout redireciona pra cá com ?desativado=1).
-  const desativado = searchParams.get("desativado") === "1";
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState<string | null>(null);
@@ -64,11 +70,9 @@ function LoginForm() {
         <h1 className="font-display text-xl font-semibold text-ink">Acesso à plataforma</h1>
         <p className="mb-5 mt-1 text-xs text-ink-muted">Entre com suas credenciais.</p>
 
-        {desativado && (
-          <div className="mb-3 rounded-lg bg-alerta/10 px-3 py-2 text-xs text-alerta ring-1 ring-inset ring-alerta/25">
-            Seu acesso foi encerrado. Fale com o administrador da sua organização.
-          </div>
-        )}
+        <Suspense fallback={null}>
+          <AvisoDesativado />
+        </Suspense>
 
         <form onSubmit={entrar} className="space-y-3">
           <div>

@@ -13,6 +13,10 @@ set -e
 if [ -n "$DATABASE_URL" ]; then
   echo "[entrypoint] aplicando migrations (scripts/migrate.mjs)..."
   node scripts/migrate.mjs
+  # Bootstrap do 1º admin (idempotente; no-op se já existe ou sem env). Não
+  # derruba o boot em caso de erro (o próprio script trata e sai 0).
+  echo "[entrypoint] verificando bootstrap de admin..."
+  node scripts/seed-admin.mjs || echo "[entrypoint] seed-admin pulado/falhou (não-fatal)."
 else
   echo "[entrypoint] DATABASE_URL ausente — pulando migrations."
 fi

@@ -34,9 +34,11 @@ Dockerfile
 docker-compose.yml
 docker-compose.prod.yml
 Caddyfile
-# scripts/* exclui os scripts locais, mas migrate.mjs entra (roda no entrypoint).
+# scripts/* exclui os scripts locais, mas migrate.mjs + seed-admin.mjs entram
+# (rodam no entrypoint).
 scripts/*
 !scripts/migrate.mjs
+!scripts/seed-admin.mjs
 
 # Plataformas externas / SO.
 .vercel

@@ -51,6 +51,7 @@ COPY --from=build --chown=nextjs:nodejs /app/public ./public
 
 # Migrations no start: o entrypoint roda scripts/migrate.mjs antes do server.
 COPY --from=build --chown=nextjs:nodejs /app/scripts/migrate.mjs ./scripts/migrate.mjs
+COPY --from=build --chown=nextjs:nodejs /app/scripts/seed-admin.mjs ./scripts/seed-admin.mjs
 COPY --from=build --chown=nextjs:nodejs /app/db/migrations ./db/migrations
 # O Next BUNDLA `postgres` dentro do server compilado (não fica em node_modules),
 # mas o migrate.mjs é um script à parte e precisa resolvê-lo como módulo.

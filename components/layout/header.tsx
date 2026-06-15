@@ -2,9 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, Play, Square, ChevronDown, Check, Search, Bell, Sun, Moon, LogOut } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useApp } from "@/lib/app-state";
+import { Menu, ChevronDown, Sun, Moon, LogOut } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { navItems } from "@/components/layout/nav";
 import type { UsuarioSessao } from "@/components/layout/shell";
@@ -14,11 +12,6 @@ const PAPEL_LABEL: Record<UsuarioSessao["papel"], string> = {
   clinica: "Clínica Parceira",
   admin: "Admin P2A",
 };
-const DEMO: { papel: UsuarioSessao["papel"]; email: string }[] = [
-  { papel: "sst", email: "gestor@translog.com.br" },
-  { papel: "clinica", email: "clinica@translog.com.br" },
-  { papel: "admin", email: "admin@p2a.tech" },
-];
 
 function iniciaisDe(nome: string): string {
   const p = nome.trim().split(/\s+/);
@@ -32,7 +25,6 @@ export function Header({
   onOpenMenu: () => void;
   usuario?: UsuarioSessao;
 }) {
-  const { apresentando, toggleApresentacao } = useApp();
   const { tema, toggleTema } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
@@ -57,20 +49,6 @@ export function Header({
     router.refresh();
   };
 
-  const trocarPapel = async (email: string) => {
-    setAberto(false);
-    const r = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email, senha: "previa123" }),
-    });
-    const j = await r.json().catch(() => ({}));
-    if (r.ok) {
-      router.push(j.redirect ?? "/dashboard");
-      router.refresh();
-    }
-  };
-
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-line/5 bg-navy/80 px-4 backdrop-blur-md md:px-6">
       <div className="flex items-center gap-3">
@@ -87,27 +65,7 @@ export function Header({
         </div>
       </div>
 
-      <div className="hidden flex-1 justify-center px-6 lg:flex">
-        <div className="flex w-full max-w-md items-center gap-2 rounded-xl border border-line/5 bg-fill/[0.03] px-3 py-2 text-sm text-ink-muted">
-          <Search className="h-4 w-4" />
-          <span>Buscar setor, alerta ou evidência…</span>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <button
-          onClick={toggleApresentacao}
-          className={cn(
-            "flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-all",
-            apresentando
-              ? "bg-humano text-white shadow-glowHuman"
-              : "bg-ia/15 text-ia ring-1 ring-inset ring-ia/25 hover:bg-ia/25",
-          )}
-        >
-          {apresentando ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-          <span className="hidden sm:inline">{apresentando ? "Parar tour" : "Modo apresentação"}</span>
-        </button>
-
+      <div className="ml-auto flex items-center gap-2">
         <button
           onClick={toggleTema}
           className="grid h-9 w-9 place-items-center rounded-lg text-ink-muted ring-1 ring-inset ring-line/10 transition-colors hover:bg-fill/5 hover:text-ink"
@@ -115,14 +73,6 @@ export function Header({
           title={tema === "dark" ? "Tema claro" : "Tema escuro"}
         >
           {tema === "dark" ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
-        </button>
-
-        <button
-          className="relative grid h-9 w-9 place-items-center rounded-lg text-ink-muted hover:bg-fill/5 hover:text-ink"
-          aria-label="Notificações"
-        >
-          <Bell className="h-[18px] w-[18px]" />
-          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-humano" />
         </button>
 
         {/* Usuário autenticado */}
@@ -147,19 +97,6 @@ export function Header({
                 <div className="text-sm font-medium text-ink">{nome}</div>
                 <div className="text-[11px] text-ink-muted">{usuario?.email}</div>
               </div>
-              <div className="px-3 pb-1 pt-2 text-[11px] uppercase tracking-wider text-ink-muted">
-                Trocar papel (demo)
-              </div>
-              {DEMO.map((d) => (
-                <button
-                  key={d.papel}
-                  onClick={() => trocarPapel(d.email)}
-                  className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-fill/5"
-                >
-                  <span className="flex-1 text-sm text-ink">{PAPEL_LABEL[d.papel]}</span>
-                  {usuario?.papel === d.papel && <Check className="h-4 w-4 text-ia" />}
-                </button>
-              ))}
               <button
                 onClick={sair}
                 className="flex w-full items-center gap-2 border-t border-line/5 px-3 py-2.5 text-left text-sm text-humano hover:bg-fill/5"

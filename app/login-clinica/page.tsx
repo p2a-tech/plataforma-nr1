@@ -9,8 +9,8 @@ import { RadarRings } from "@/components/brand/radar-rings";
 
 export default function LoginClinicaPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("clinica@translog.com.br");
-  const [senha, setSenha] = useState("previa123");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
 
@@ -101,16 +101,11 @@ export default function LoginClinicaPage() {
           </Link>
         </div>
 
-        <div className="mt-4 rounded-lg border border-line/10 bg-fill/[0.02] px-3 py-2 text-[11px] text-ink-muted">
-          Demo: <span className="text-ink/80">clinica@translog.com.br</span> · senha{" "}
-          <span className="text-ink/80">previa123</span>
-        </div>
-
         <Link
-          href="/dashboard"
+          href="/login"
           className="mt-6 inline-flex items-center gap-1.5 text-xs text-ink-muted transition hover:text-ink"
         >
-          <ArrowLeft className="h-3.5 w-3.5" /> Voltar ao painel de demonstração
+          <ArrowLeft className="h-3.5 w-3.5" /> Acesso empresa / SST
         </Link>
       </div>
     </div>

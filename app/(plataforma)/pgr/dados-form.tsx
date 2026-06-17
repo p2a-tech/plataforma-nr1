@@ -15,7 +15,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Save, Loader2, Plus, X, Building2, UserCog, BookOpen, ListChecks } from "lucide-react";
 import type { PgrRevisao, RiscoManualPgr } from "@/lib/pgr";
-import { ATIVIDADES_CLINICAS, descricaoPadrao } from "@/lib/catalogo-atividades-clinicas";
+import { ATIVIDADES_CLINICAS } from "@/lib/catalogo-atividades-clinicas";
+import {
+  listarPorCategoria,
+  type RiscoOcupacionalCatalogo,
+} from "@/lib/catalogo-riscos-ocupacionais";
 
 const CONSELHOS = ["CRP", "CRM", "CREA", "COREN", "CRF", "CRO", "CRESS", "Outro"] as const;
 type Conselho = (typeof CONSELHOS)[number] | "";
@@ -92,6 +96,22 @@ export function DadosForm({
     else setRiscosErgo(riscosErgo.filter((_, i) => i !== idx));
   };
 
+  // Adiciona um item do catálogo ao array, sem duplicar (compara pelo nome do risco).
+  const addDoCatalogo = (tipo: "f" | "e", item: RiscoOcupacionalCatalogo) => {
+    const arr = tipo === "f" ? riscosFisicos : riscosErgo;
+    const jaExiste = arr.some(
+      (r) => r.risco.trim().toLowerCase() === item.risco.trim().toLowerCase(),
+    );
+    if (jaExiste) return;
+    const novo: RiscoManualPgr = {
+      risco: item.risco,
+      fonte: item.fonte,
+      consequencia: item.consequencia,
+    };
+    if (tipo === "f") setRiscosFisicos([...arr, novo]);
+    else setRiscosErgo([...arr, novo]);
+  };
+
   const aplicarTemplateAtividades = (key: string) => {
     const item = ATIVIDADES_CLINICAS.find((a) => a.key === key);
     if (!item) return;
@@ -104,6 +124,18 @@ export function DadosForm({
     setMensagem(null);
     if (cnpj && !CNPJ_RE.test(cnpj)) {
       setMensagem({ tipo: "erro", texto: "CNPJ deve estar no formato 00.000.000/0000-00." });
+      return;
+    }
+    // Validação leve: linha com algum campo preenchido precisa ter o nome do risco.
+    const semNome =
+      riscosFisicos.some((r) => (r.fonte.trim() || r.consequencia.trim()) && !r.risco.trim()) ||
+      riscosErgo.some((r) => (r.fonte.trim() || r.consequencia.trim()) && !r.risco.trim());
+    if (semNome) {
+      setTab("riscos");
+      setMensagem({
+        tipo: "erro",
+        texto: "Informe o nome do risco nas linhas preenchidas (4.1 / 4.2).",
+      });
       return;
     }
     setEnviando(true);
@@ -121,8 +153,12 @@ export function DadosForm({
           responsavel_tecnico_registro: rtRegistro,
           publico_atendido: publico,
           descricao_atividades: descricao,
-          riscos_fisicos: riscosFisicos.filter((r) => r.risco || r.fonte || r.consequencia),
-          riscos_ergonomicos: riscosErgo.filter((r) => r.risco || r.fonte || r.consequencia),
+          riscos_fisicos: riscosFisicos.filter(
+            (r) => r.risco.trim() && r.fonte.trim() && r.consequencia.trim(),
+          ),
+          riscos_ergonomicos: riscosErgo.filter(
+            (r) => r.risco.trim() && r.fonte.trim() && r.consequencia.trim(),
+          ),
         }),
       });
       const j = await r.json();
@@ -252,6 +288,8 @@ export function DadosForm({
             titulo="4.1 Riscos físicos"
             ajuda="Ex.: ruído, iluminação inadequada, temperatura, fios expostos."
             riscos={riscosFisicos}
+            catalogo={listarPorCategoria("fisico")}
+            onAddCatalogo={(item) => addDoCatalogo("f", item)}
             onAdd={() => addRisco("f")}
             onUpd={(i, c, v) => updRisco("f", i, c, v)}
             onRm={(i) => rmRisco("f", i)}
@@ -260,6 +298,8 @@ export function DadosForm({
             titulo="4.2 Riscos ergonômicos"
             ajuda="Ex.: postura inadequada, permanência prolongada sentado, mobiliário não regulável."
             riscos={riscosErgo}
+            catalogo={listarPorCategoria("ergonomico")}
+            onAddCatalogo={(item) => addDoCatalogo("e", item)}
             onAdd={() => addRisco("e")}
             onUpd={(i, c, v) => updRisco("e", i, c, v)}
             onRm={(i) => rmRisco("e", i)}
@@ -358,6 +398,8 @@ function SecaoRiscos({
   titulo,
   ajuda,
   riscos,
+  catalogo,
+  onAddCatalogo,
   onAdd,
   onUpd,
   onRm,
@@ -365,13 +407,18 @@ function SecaoRiscos({
   titulo: string;
   ajuda: string;
   riscos: RiscoManualPgr[];
+  catalogo: RiscoOcupacionalCatalogo[];
+  onAddCatalogo: (item: RiscoOcupacionalCatalogo) => void;
   onAdd: () => void;
   onUpd: (idx: number, campo: keyof RiscoManualPgr, valor: string) => void;
   onRm: (idx: number) => void;
 }) {
+  // Nomes já presentes (case-insensitive) — desabilita a sugestão do catálogo.
+  const presentes = new Set(riscos.map((r) => r.risco.trim().toLowerCase()));
+
   return (
     <div>
-      <div className="mb-1.5 flex items-center justify-between">
+      <div className="mb-1.5 flex items-center justify-between gap-3">
         <div>
           <div className="text-sm font-medium text-ink">{titulo}</div>
           <p className="text-[11px] text-ink-muted">{ajuda}</p>
@@ -379,51 +426,93 @@ function SecaoRiscos({
         <button
           type="button"
           onClick={onAdd}
-          className="flex items-center gap-1 rounded-lg bg-ia/10 px-2.5 py-1 text-xs font-medium text-ia ring-1 ring-inset ring-ia/25 hover:bg-ia/20"
+          className="flex shrink-0 items-center gap-1 rounded-lg bg-ia/10 px-2.5 py-1 text-xs font-medium text-ia ring-1 ring-inset ring-ia/25 hover:bg-ia/20"
         >
-          <Plus className="h-3.5 w-3.5" /> Adicionar
+          <Plus className="h-3.5 w-3.5" /> Adicionar linha
         </button>
       </div>
+
+      {/* Adicionar do catálogo (NR-9 físicos / NR-17 ergonômicos) */}
+      {catalogo.length > 0 && (
+        <div className="mb-2 rounded-lg border border-line/10 bg-fill/[0.02] p-2.5">
+          <div className="mb-1.5 text-[11px] font-medium text-ink-muted">
+            Adicionar do catálogo
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {catalogo.map((item) => {
+              const jaAdicionado = presentes.has(item.risco.trim().toLowerCase());
+              return (
+                <button
+                  type="button"
+                  key={item.key}
+                  onClick={() => onAddCatalogo(item)}
+                  disabled={jaAdicionado}
+                  title={`${item.fonte} → ${item.consequencia}`}
+                  className={`rounded-md border px-2 py-1 text-[11px] transition ${
+                    jaAdicionado
+                      ? "cursor-not-allowed border-line/10 bg-fill/[0.02] text-ink-muted/50"
+                      : "border-line/10 bg-fill/[0.03] text-ink-muted hover:border-ia/30 hover:text-ia"
+                  }`}
+                >
+                  {jaAdicionado ? "✓ " : "+ "}
+                  {item.risco}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {riscos.length === 0 ? (
         <p className="rounded-lg border border-dashed border-line/15 bg-fill/[0.02] px-3 py-3 text-center text-[11px] text-ink-muted">
-          Nenhum risco listado. Adicione conforme avaliação da clínica.
+          Nenhum risco listado. Use o catálogo acima ou adicione manualmente conforme avaliação da
+          clínica.
         </p>
       ) : (
         <div className="space-y-2">
-          {riscos.map((r, i) => (
-            <div
-              key={i}
-              className="grid gap-2 rounded-lg border border-line/10 bg-fill/[0.02] p-2.5 md:grid-cols-[1fr_1fr_1fr_auto]"
-            >
-              <input
-                value={r.risco}
-                onChange={(e) => onUpd(i, "risco", e.target.value)}
-                placeholder="Risco"
-                className={inputCls}
-              />
-              <input
-                value={r.fonte}
-                onChange={(e) => onUpd(i, "fonte", e.target.value)}
-                placeholder="Fonte"
-                className={inputCls}
-              />
-              <input
-                value={r.consequencia}
-                onChange={(e) => onUpd(i, "consequencia", e.target.value)}
-                placeholder="Consequência"
-                className={inputCls}
-              />
-              <button
-                type="button"
-                onClick={() => onRm(i)}
-                className="flex h-8 w-8 items-center justify-center self-center rounded-lg bg-alerta/10 text-alerta ring-1 ring-inset ring-alerta/25 hover:bg-alerta/20"
-                title="Remover"
-                aria-label="Remover risco"
+          {riscos.map((r, i) => {
+            const semNome = !r.risco.trim() && (r.fonte.trim() !== "" || r.consequencia.trim() !== "");
+            return (
+              <div
+                key={i}
+                className="grid gap-2 rounded-lg border border-line/10 bg-fill/[0.02] p-2.5 md:grid-cols-[1fr_1fr_1fr_auto]"
               >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
+                <input
+                  value={r.risco}
+                  onChange={(e) => onUpd(i, "risco", e.target.value)}
+                  placeholder="Risco (obrigatório)"
+                  aria-label="Risco"
+                  className={`${inputCls} ${semNome ? "border-alerta/50 focus:border-alerta/60" : ""}`}
+                />
+                <input
+                  value={r.fonte}
+                  onChange={(e) => onUpd(i, "fonte", e.target.value)}
+                  placeholder="Fonte geradora"
+                  aria-label="Fonte"
+                  className={inputCls}
+                />
+                <input
+                  value={r.consequencia}
+                  onChange={(e) => onUpd(i, "consequencia", e.target.value)}
+                  placeholder="Consequência à saúde"
+                  aria-label="Consequência"
+                  className={inputCls}
+                />
+                <button
+                  type="button"
+                  onClick={() => onRm(i)}
+                  className="flex h-8 w-8 items-center justify-center self-center rounded-lg bg-alerta/10 text-alerta ring-1 ring-inset ring-alerta/25 hover:bg-alerta/20"
+                  title="Remover linha"
+                  aria-label="Remover risco"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            );
+          })}
+          <p className="text-[11px] text-ink-muted">
+            Linhas incompletas (sem risco, fonte ou consequência) não são salvas.
+          </p>
         </div>
       )}
     </div>

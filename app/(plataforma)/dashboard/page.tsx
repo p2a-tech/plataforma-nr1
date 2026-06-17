@@ -10,6 +10,7 @@ import {
   PenLine,
   Database,
   FlaskConical,
+  FileText,
 } from "lucide-react";
 import Link from "next/link";
 import { Card, CardTitle, PageHeader, Badge, ProgressBar } from "@/components/ui/primitives";
@@ -258,6 +259,14 @@ export default async function DashboardPage() {
                 Revisar e assinar PGR
                 <ArrowUpRight className="h-4 w-4" />
               </Link>
+
+              <a
+                href="/api/drps/relatorio/pdf"
+                className="mt-2 flex items-center justify-center gap-1.5 text-xs font-medium text-ink-muted transition hover:text-ia"
+              >
+                <FileText className="h-3.5 w-3.5" />
+                Relatório executivo DRPS (PDF)
+              </a>
             </Card>
           </div>
         </>

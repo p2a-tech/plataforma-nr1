@@ -125,10 +125,13 @@ export default async function PgrPreviewPage({
         <CardTitle>4. Identificação dos riscos ocupacionais</CardTitle>
 
         <h3 className="mt-1 text-sm font-semibold text-ink">4.1 Riscos físicos</h3>
-        <TabelaManual itens={dados?.riscos_fisicos ?? []} />
+        <TabelaManual itens={dados?.riscos_fisicos ?? []} vazioLabel="(nenhum risco físico informado)" />
 
         <h3 className="mt-4 text-sm font-semibold text-ink">4.2 Riscos ergonômicos</h3>
-        <TabelaManual itens={dados?.riscos_ergonomicos ?? []} />
+        <TabelaManual
+          itens={dados?.riscos_ergonomicos ?? []}
+          vazioLabel="(nenhum risco ergonômico informado)"
+        />
 
         <h3 className="mt-4 text-sm font-semibold text-ink">4.3 Riscos psicossociais</h3>
         {riscos.length === 0 ? (
@@ -315,11 +318,13 @@ function KV({ k, v }: { k: string; v: string }) {
 
 function TabelaManual({
   itens,
+  vazioLabel = "(nenhum risco informado)",
 }: {
   itens: { risco: string; fonte: string; consequencia: string }[];
+  vazioLabel?: string;
 }) {
   if (!itens || itens.length === 0) {
-    return <p className="text-xs text-ink-muted">Nenhum risco listado.</p>;
+    return <p className="text-xs text-ink-muted">{vazioLabel}</p>;
   }
   return (
     <div className="overflow-x-auto">

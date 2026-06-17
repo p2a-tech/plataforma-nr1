@@ -1,4 +1,4 @@
-import { History, Download, GitCompareArrows, TrendingUp } from "lucide-react";
+import { History, Download, FileText, GitCompareArrows, TrendingUp } from "lucide-react";
 import { Card, CardTitle, PageHeader, Badge } from "@/components/ui/primitives";
 import { exigirSessao } from "@/lib/auth";
 import { serieDimensoes } from "@/lib/drps-historico";
@@ -39,14 +39,24 @@ export default async function HistoricoPage() {
           </Badge>
         }
         acao={
-          <a
-            href="/api/drps/historico/csv"
-            download
-            className="inline-flex items-center gap-1.5 rounded-md bg-ia/15 px-3 py-1.5 text-xs font-medium text-ia ring-1 ring-inset ring-ia/25 transition hover:bg-ia/25"
-          >
-            <Download className="h-3.5 w-3.5" />
-            Baixar histórico (CSV)
-          </a>
+          <div className="flex flex-wrap items-center gap-2">
+            <a
+              href="/api/drps/relatorio/pdf"
+              download
+              className="inline-flex items-center gap-1.5 rounded-md bg-ia/15 px-3 py-1.5 text-xs font-medium text-ia ring-1 ring-inset ring-ia/25 transition hover:bg-ia/25"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              Baixar relatório executivo (PDF)
+            </a>
+            <a
+              href="/api/drps/historico/csv"
+              download
+              className="inline-flex items-center gap-1.5 rounded-md bg-fill/5 px-3 py-1.5 text-xs font-medium text-ink-muted ring-1 ring-inset ring-line/20 transition hover:bg-fill/10"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Baixar histórico (CSV)
+            </a>
+          </div>
         }
       />
 

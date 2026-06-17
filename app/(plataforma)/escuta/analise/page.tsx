@@ -4,6 +4,7 @@ import {
   Users,
   Activity,
   Download,
+  FileText,
   Clock4,
 } from "lucide-react";
 import {
@@ -52,12 +53,20 @@ export default async function AnaliseDrpsPage() {
           </Badge>
         }
         acao={
-          <a
-            href="/api/drps/analise/csv"
-            className="inline-flex items-center gap-2 rounded-xl border border-ia/40 bg-ia/10 px-3 py-2 text-sm font-medium text-ia transition hover:bg-ia/15"
-          >
-            <Download className="h-4 w-4" /> Baixar análise (CSV)
-          </a>
+          <div className="flex flex-wrap items-center gap-2">
+            <a
+              href="/api/drps/relatorio/pdf"
+              className="inline-flex items-center gap-2 rounded-xl border border-ia/40 bg-ia/10 px-3 py-2 text-sm font-medium text-ia transition hover:bg-ia/15"
+            >
+              <FileText className="h-4 w-4" /> Baixar relatório executivo (PDF)
+            </a>
+            <a
+              href="/api/drps/analise/csv"
+              className="inline-flex items-center gap-2 rounded-xl border border-line/20 bg-fill/5 px-3 py-2 text-sm font-medium text-ink-muted transition hover:bg-fill/10"
+            >
+              <Download className="h-4 w-4" /> Baixar análise (CSV)
+            </a>
+          </div>
         }
       />
 

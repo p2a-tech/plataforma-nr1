@@ -152,12 +152,12 @@ export async function gerarPgrPdf(input: PgrPdfInput): Promise<Buffer> {
 
     // 4.1 Físicos
     y = subSecao(doc, "4.1 Riscos físicos", y);
-    y = tabelaRiscosManual(doc, dados?.riscos_fisicos ?? [], y);
+    y = tabelaRiscosManual(doc, dados?.riscos_fisicos ?? [], y, "físico");
 
     // 4.2 Ergonômicos
     y = espaco(y, 10);
     y = subSecao(doc, "4.2 Riscos ergonômicos", y);
-    y = tabelaRiscosManual(doc, dados?.riscos_ergonomicos ?? [], y);
+    y = tabelaRiscosManual(doc, dados?.riscos_ergonomicos ?? [], y, "ergonômico");
 
     // 4.3 Psicossociais (a partir do inventário automatizado)
     y = espaco(y, 10);
@@ -390,9 +390,14 @@ function tabelaRiscosManual(
   doc: PDFKit.PDFDocument,
   riscos: RiscoManualPgr[],
   y: number,
+  categoria: "físico" | "ergonômico" = "físico",
 ): number {
   if (!riscos || riscos.length === 0) {
-    doc.fillColor(COR_MUTED).font("Helvetica-Oblique").fontSize(9).text("Nenhum risco listado.", 50, y);
+    doc
+      .fillColor(COR_MUTED)
+      .font("Helvetica-Oblique")
+      .fontSize(9)
+      .text(`(nenhum risco ${categoria} informado)`, 50, y);
     return y + 14;
   }
   // Cabeçalho

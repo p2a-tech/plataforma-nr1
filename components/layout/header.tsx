@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, Play, Square, ChevronDown, Sun, Moon, LogOut } from "lucide-react";
+import { Menu, Play, Square, ChevronDown, Sun, Moon, LogOut, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/app-state";
 import { useTheme } from "@/lib/theme";
@@ -37,6 +38,35 @@ export function Header({
   const tituloAtual = navItems.find((n) => n.href === pathname)?.label ?? "PrevIA";
   const nome = usuario?.nome ?? "Usuário";
   const papelLabel = usuario ? PAPEL_LABEL[usuario.papel] : "—";
+
+  // Sino de notificações: só para quem acessa o painel (sst|admin). Clínica não.
+  const verNotificacoes = usuario?.papel === "sst" || usuario?.papel === "admin";
+  const [naoLidas, setNaoLidas] = useState(0);
+
+  const buscarNaoLidas = useCallback(async () => {
+    try {
+      const res = await fetch("/api/notificacoes?nao_lidas=1&limit=1", {
+        cache: "no-store",
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as { naoLidas?: number };
+      setNaoLidas(typeof data.naoLidas === "number" ? data.naoLidas : 0);
+    } catch {
+      /* silencioso — o sino só perde a contagem */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!verNotificacoes) return;
+    void buscarNaoLidas();
+    const t = setInterval(() => void buscarNaoLidas(), 60_000);
+    return () => clearInterval(t);
+  }, [verNotificacoes, buscarNaoLidas]);
+
+  // Ao navegar para /notificacoes, reatualiza a contagem (pode zerar lá dentro).
+  useEffect(() => {
+    if (verNotificacoes && pathname === "/notificacoes") void buscarNaoLidas();
+  }, [pathname, verNotificacoes, buscarNaoLidas]);
 
   useEffect(() => {
     const fora = (e: MouseEvent) => {
@@ -81,6 +111,26 @@ export function Header({
           {apresentando ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           <span className="hidden sm:inline">{apresentando ? "Parar tour" : "Modo apresentação"}</span>
         </button>
+
+        {verNotificacoes && (
+          <Link
+            href="/notificacoes"
+            className="relative grid h-9 w-9 place-items-center rounded-lg text-ink-muted ring-1 ring-inset ring-line/10 transition-colors hover:bg-fill/5 hover:text-ink"
+            aria-label={
+              naoLidas > 0
+                ? `Notificações: ${naoLidas} não lida${naoLidas === 1 ? "" : "s"}`
+                : "Notificações"
+            }
+            title="Notificações"
+          >
+            <Bell className="h-[18px] w-[18px]" />
+            {naoLidas > 0 && (
+              <span className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-alerta px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-navy">
+                {naoLidas > 99 ? "99+" : naoLidas}
+              </span>
+            )}
+          </Link>
+        )}
 
         <button
           onClick={toggleTema}

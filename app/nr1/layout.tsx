@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { MetaPixel } from "@/components/analytics/meta-pixel";
 import { GA4 } from "@/components/analytics/ga4";
+import { CookieConsent } from "@/components/consent/cookie-consent";
 
 /**
  * Layout próprio da landing page /nr1.
@@ -45,6 +46,7 @@ export default function NR1Layout({ children }: { children: React.ReactNode }) {
       <MetaPixel />
       <GA4 />
       {children}
+      <CookieConsent />
     </div>
   );
 }

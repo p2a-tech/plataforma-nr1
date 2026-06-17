@@ -1,16 +1,22 @@
 "use client";
 
 import Script from "next/script";
+import { useConsentimentoAnalytics } from "./use-consentimento";
 
 /**
- * Google Analytics 4 — só renderiza se NEXT_PUBLIC_GA_MEASUREMENT_ID estiver
- * setado. Mesma estratégia do Meta Pixel: afterInteractive p/ não atrasar LCP.
+ * Google Analytics 4 — só renderiza se:
+ *  1) NEXT_PUBLIC_GA_MEASUREMENT_ID estiver setado; E
+ *  2) o usuário consentiu com analytics (cookie LGPD `previa_consent`).
  *
- * O id deve começar com "G-" (formato GA4).
+ * Lê o consentimento no client. Sem env ou sem consentimento → null (no-op):
+ * nenhum script do Google é injetado e nenhum hit é enviado.
+ *
+ * O id deve começar com "G-" (formato GA4). `anonymize_ip` reduz o dado coletado.
  */
 export function GA4() {
   const id = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-  if (!id) return null;
+  const consentiu = useConsentimentoAnalytics();
+  if (!id || !consentiu) return null;
 
   return (
     <>

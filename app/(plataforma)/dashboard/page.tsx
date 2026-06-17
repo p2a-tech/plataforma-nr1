@@ -11,6 +11,7 @@ import {
   Database,
   FlaskConical,
   FileText,
+  ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { Card, CardTitle, PageHeader, Badge, ProgressBar } from "@/components/ui/primitives";
@@ -29,6 +30,7 @@ import {
   getSerieRadarDiaria,
   type DashMetric,
 } from "@/lib/queries";
+import { avaliarProntidao, rotuloProntidao } from "@/lib/prontidao";
 
 // Sempre busca no servidor a cada request (dados podem ter mudado).
 export const dynamic = "force-dynamic";
@@ -41,7 +43,7 @@ function tempoDesde(iso: string | null): string {
 
 export default async function DashboardPage() {
   const sessao = exigirSessao(["sst", "admin"]); // gate na página + escopo de empresa
-  const [heat, alert, serie, resumo, pgr, metrics] = await withEmpresa(
+  const [heat, alert, serie, resumo, pgr, metrics, prontidao] = await withEmpresa(
     sessao.empresa_id,
     () =>
       Promise.all([
@@ -51,10 +53,12 @@ export default async function DashboardPage() {
         getResumo(),
         getPgrStatus(),
         getDashboardMetrics(),
+        avaliarProntidao(sessao.empresa_id),
       ]),
   );
 
   const dadosReais = metrics.fonte === "real";
+  const prontidaoNivel = rotuloProntidao(prontidao.score);
 
   return (
     <div className="space-y-6">
@@ -73,6 +77,43 @@ export default async function DashboardPage() {
           )
         }
       />
+
+      {/* Prontidão para auditoria NR-1 — sempre visível (guia o onboarding mesmo sem dados) */}
+      <Card className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4">
+          <div
+            className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ${
+              prontidaoNivel.tone === "ok"
+                ? "bg-ok/10 text-ok ring-ok/20"
+                : prontidaoNivel.tone === "ambar"
+                  ? "bg-humano-soft/10 text-humano-soft ring-humano-soft/20"
+                  : "bg-alerta/10 text-alerta ring-alerta/20"
+            } ring-1 ring-inset`}
+          >
+            <ShieldCheck className="h-6 w-6" />
+          </div>
+          <div>
+            <div className="text-xs font-medium uppercase tracking-wider text-ink-muted">
+              Prontidão para auditoria NR-1
+            </div>
+            <div className="mt-0.5 flex items-baseline gap-2">
+              <span className="stat-num">{prontidao.score}</span>
+              <Badge tone={prontidaoNivel.tone}>{prontidaoNivel.rotulo}</Badge>
+            </div>
+            <p className="mt-1 text-xs text-ink-muted">
+              {prontidao.itens.filter((i) => i.status === "ok").length} de{" "}
+              {prontidao.itens.length} requisitos conformes
+            </p>
+          </div>
+        </div>
+        <Link
+          href="/conformidade/prontidao"
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-ia/25 bg-ia/10 px-4 py-2.5 text-sm font-medium text-ia transition hover:bg-ia/20"
+        >
+          Ver placar completo
+          <ArrowUpRight className="h-4 w-4" />
+        </Link>
+      </Card>
 
       {!dadosReais ? (
         <EstadoVazio />

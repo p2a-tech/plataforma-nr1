@@ -1,17 +1,24 @@
 "use client";
 
 import Script from "next/script";
+import { useConsentimentoAnalytics } from "./use-consentimento";
 
 /**
- * Meta (Facebook) Pixel — só renderiza se NEXT_PUBLIC_META_PIXEL_ID estiver
- * setado. Sem id, retorna null (não polui o DOM nem o CSP).
+ * Meta (Facebook) Pixel — só renderiza se:
+ *  1) NEXT_PUBLIC_META_PIXEL_ID estiver setado; E
+ *  2) o usuário consentiu com analytics (cookie LGPD `previa_consent`).
  *
- * O `<noscript>` cobre o caso em que o JS não roda (ex: bots, opt-out).
+ * Como é client component, lê o consentimento no client (useState/useEffect +
+ * eventos de alteração). Sem env ou sem consentimento → null (no-op, não polui
+ * o DOM/CSP e não dispara nenhuma chamada à Meta).
+ *
+ * O `<noscript>` (pixel-imagem) é igualmente condicionado ao consentimento.
  * `strategy="afterInteractive"` evita atrasar o LCP da landing.
  */
 export function MetaPixel() {
   const id = process.env.NEXT_PUBLIC_META_PIXEL_ID;
-  if (!id) return null;
+  const consentiu = useConsentimentoAnalytics();
+  if (!id || !consentiu) return null;
 
   return (
     <>

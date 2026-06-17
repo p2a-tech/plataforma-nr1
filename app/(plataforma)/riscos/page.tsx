@@ -217,7 +217,14 @@ export default async function RiscosPage() {
           <CardTitle
             icon={<ListChecks className="h-5 w-5" />}
             hint="Fonte do risco = organização do trabalho, não o indivíduo (NR-1)"
-            action={<Badge tone="neutro">{riscos.length} riscos</Badge>}
+            action={
+              <Link
+                href="/conformidade/acoes"
+                className="flex items-center gap-1.5 rounded-lg border border-ia/25 bg-ia/5 px-3 py-1.5 text-xs font-medium text-ia transition hover:bg-ia/15"
+              >
+                <ListChecks className="h-3.5 w-3.5" /> Acompanhar planos de ação
+              </Link>
+            }
           >
             Plano de ação por risco
           </CardTitle>

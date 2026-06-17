@@ -29,6 +29,7 @@ import {
   Zap,
 } from "lucide-react";
 import { LeadForm } from "./_components/lead-form";
+import { GerenciarCookies } from "./_components/gerenciar-cookies";
 
 /**
  * Landing page pública /nr1 — destino do tráfego pago Meta + orgânico.
@@ -1251,6 +1252,19 @@ function Footer() {
               Privacidade
             </div>
             <ul className="space-y-2 text-sm text-ink-muted">
+              <li>
+                <Link href="/privacidade" className="hover:text-ink">
+                  Política de Privacidade
+                </Link>
+              </li>
+              <li>
+                <Link href="/termos" className="hover:text-ink">
+                  Termos de Uso
+                </Link>
+              </li>
+              <li>
+                <GerenciarCookies />
+              </li>
               <li>
                 <a href="mailto:dpo@p2a.tech" className="hover:text-ink">
                   DPO · dpo@p2a.tech

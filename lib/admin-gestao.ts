@@ -1,6 +1,8 @@
 import "server-only";
+import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
+import { fingerprint } from "@/lib/clinic-secrets";
 // Gestão de empresas/usuários é cross-tenant por design (Console Admin da P2A).
 // Usa o cliente root (bypass de RLS); o gate de papel 'admin' é feito na
 // page/route que invoca estas funções. NUNCA expor sem checagem de papel.
@@ -501,6 +503,104 @@ export async function listarClinicas(empresaId?: string): Promise<ClinicaRow[]> 
   } catch (e) {
     console.warn("[admin-gestao] listarClinicas falhou:", e);
     return [];
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Clínicas (onboarding de parceiro)                                           */
+/* -------------------------------------------------------------------------- */
+
+/** Gera id slug de clínica (clin_<slug>_<sufixo>). */
+export function gerarIdClinica(nome: string): string {
+  const base = nome
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 24);
+  const sufixo = randomBytes(2).toString("hex");
+  return `clin_${base.length > 0 ? base : "clinica"}_${sufixo}`;
+}
+
+/** Segredo HMAC do webhook da clínica (retornado UMA vez; só o hash persiste). */
+export function gerarSegredoClinica(): string {
+  return randomBytes(32).toString("base64url");
+}
+
+const criarClinicaSchema = z
+  .object({
+    id: z.string().trim().min(2).max(48).optional(),
+    nome: z.string().trim().min(2).max(160),
+    cnpj: z.string().trim().max(20).optional().nullable(),
+    empresa_id: z.string().trim().min(1).max(60),
+    /** Opcional: se não vier, geramos. O cru NUNCA é persistido (só o sha256). */
+    segredo: z.string().trim().min(16).max(200).optional(),
+  })
+  .strict();
+export type CriarClinicaInput = z.input<typeof criarClinicaSchema>;
+
+/**
+ * Cria a clínica parceira. `clinicas.webhook_secret_hash` é NOT NULL e guarda
+ * apenas o sha256 do segredo (mesmo `fingerprint` que o webhook valida) — o
+ * segredo cru volta UMA vez na resposta para ser guardado no perímetro da
+ * clínica (env/secret manager), e nunca mais é recuperável.
+ */
+export async function criarClinica(
+  input: CriarClinicaInput,
+): Promise<Resultado<ClinicaRow & { segredoWebhook: string }>> {
+  if (!dbHabilitado) return { ok: false, erro: "db_indisponivel" };
+
+  const parsed = criarClinicaSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, erro: "validacao", detalhe: parsed.error.issues.map((i) => i.message) };
+  }
+  const { nome, cnpj, empresa_id } = parsed.data;
+  const id = parsed.data.id?.trim() || gerarIdClinica(nome);
+  const segredo = parsed.data.segredo?.trim() || gerarSegredoClinica();
+
+  try {
+    const [emp] = await sql<{ id: string }[]>`
+      select id from public.empresas where id = ${empresa_id} limit 1
+    `;
+    if (!emp) return { ok: false, erro: "empresa_inexistente" };
+
+    const [row] = await sql<{ id: string }[]>`
+      insert into public.clinicas (id, nome, cnpj, webhook_secret_hash, empresa_id, ativa)
+      values (${id}, ${nome}, ${cnpj ?? null}, ${fingerprint(segredo)}, ${empresa_id}, true)
+      on conflict (id) do nothing
+      returning id
+    `;
+    if (!row) {
+      return { ok: false, erro: "id_duplicado", detalhe: [`Já existe clínica com id '${id}'.`] };
+    }
+    return {
+      ok: true,
+      data: { id, nome, empresa_id, ativa: true, segredoWebhook: segredo },
+    };
+  } catch (e) {
+    console.warn("[admin-gestao] criarClinica falhou:", e);
+    return { ok: false, erro: "erro_interno" };
+  }
+}
+
+/** Ativa/desativa a clínica. */
+export async function setClinicaAtiva(
+  id: string,
+  ativa: boolean,
+): Promise<Resultado<ClinicaRow>> {
+  if (!dbHabilitado) return { ok: false, erro: "db_indisponivel" };
+  try {
+    const [row] = await sql<ClinicaRow[]>`
+      update public.clinicas set ativa = ${ativa}
+       where id = ${id}
+      returning id, nome, empresa_id, ativa
+    `;
+    if (!row) return { ok: false, erro: "nao_encontrado" };
+    return { ok: true, data: row };
+  } catch (e) {
+    console.warn("[admin-gestao] setClinicaAtiva falhou:", e);
+    return { ok: false, erro: "erro_interno" };
   }
 }
 

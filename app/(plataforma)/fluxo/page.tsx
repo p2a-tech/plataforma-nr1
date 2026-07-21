@@ -113,7 +113,7 @@ export default function FluxoPage() {
               </div>
             </div>
             <ul className="space-y-2 text-sm text-ink/85">
-              <ItemBarreira tone="ia">Ofensores organizacionais genéricos (ex.: "sobrecarga")</ItemBarreira>
+              <ItemBarreira tone="ia">Ofensores organizacionais genéricos (ex.: &ldquo;sobrecarga&rdquo;)</ItemBarreira>
               <ItemBarreira tone="ia">Clusters por Setor / Turno (nunca pessoas)</ItemBarreira>
               <ItemBarreira tone="ia">Métricas agregadas para o PGR/GRO</ItemBarreira>
             </ul>
